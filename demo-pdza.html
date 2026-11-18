@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Démo – Tableau de bord de suivi d'un PDZA</title>
+<meta name="description" content="Démonstration d'un tableau de bord de suivi de plan d'action pour une MRC (données fictives).">
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<style>
+  :root {
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    --color-fg: #1f1e1c; --color-fg-muted: #6b6862; --color-bg: #faf9f6; --color-panel: #ffffff;
+    --color-border-line: #e4e1da; --color-ok: #2f8a4e; --color-warn: #c27a12; --color-bad: #c2412d;
+    --cds-font-size-caption: 12.5px; --cds-font-size-body: 14px; --cds-font-size-heading: 17px; --cds-font-size-title: 30px;
+    --cds-font-weight-medium: 600;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 22px; --cds-gap-xl: 32px;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 20px;
+    --cds-radius: 10px;
+    --cds-chart-grid: #ece9e2; --cds-chart-axis: #c9c5bc; --cds-chart-muted: #c9c5bc; --cds-text-secondary: #6b6862;
+    --cds-surface-popover: #ffffff; --cds-border: #e4e1da; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.12);
+    --chart-1: #2d6fb5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-fg: #f1efe9; --color-fg-muted: #a8a49b; --color-bg: #1b1a18; --color-panel: #252421;
+      --color-border-line: #3a3833; --color-ok: #5cbf7c; --color-warn: #e3a043; --color-bad: #ec6f5a;
+      --cds-chart-grid: #34322d; --cds-chart-axis: #55524b; --cds-chart-muted: #5d5a53; --cds-text-secondary: #a8a49b;
+      --cds-surface-popover: #2e2d29; --cds-border: #3a3833; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.5);
+      --chart-1: #6aa6e6;
+    }
+  }
+  html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-body); }
+  #dash-root { max-width: 1120px; margin: 0 auto; padding: 28px 20px 48px; }
+  .dash-select { font: inherit; font-size: var(--cds-font-size-caption); color: var(--color-fg); background-color: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 8px; padding: 6px 10px; }
+  a { color: var(--chart-1); }
+</style>
+<script>
+  window.dash = (() => {
+    const files = { actions: d3.csvParse("id,orientation,action,responsable,echeance,statut,avancement_pct,budget_prevu,budget_engage\n1.1,Rel\u00e8ve et \u00e9tablissement,Adh\u00e9rer au service de maillage L'ARTERRE,MRC,2026,R\u00e9alis\u00e9e,100,15000,15000\n1.2,Rel\u00e8ve et \u00e9tablissement,R\u00e9pertorier les terres agricoles sous-utilis\u00e9es,MRC,2026,R\u00e9alis\u00e9e,100,8000,7600\n1.3,Rel\u00e8ve et \u00e9tablissement,Lancer un appel \u00e0 projets pour les nouvelles entreprises,MRC,2027,En cours,40,50000,12000\n1.4,Rel\u00e8ve et \u00e9tablissement,Organiser une journ\u00e9e rel\u00e8ve agricole annuelle,UPA,2026,Non amorc\u00e9e,0,5000,0\n2.1,Mise en valeur des terres et agroenvironnement,Cartographier les friches agricoles,MRC,2026,R\u00e9alis\u00e9e,100,12000,11500\n2.2,Mise en valeur des terres et agroenvironnement,Soutenir l'implantation de bandes riveraines \u00e9largies,OBV,2028,En cours,35,40000,14000\n2.3,Mise en valeur des terres et agroenvironnement,Accompagner les projets collectifs en bassin versant,Club-conseil,2029,En cours,20,30000,6000\n2.4,Mise en valeur des terres et agroenvironnement,Valoriser les terres en friche par la location,MRC,2027,En cours,50,10000,4000\n2.5,Mise en valeur des terres et agroenvironnement,Promouvoir les pratiques de conservation des sols,MAPAQ,2026,En cours,60,6000,3500\n3.1,Transformation et mise en march\u00e9 de proximit\u00e9,Cr\u00e9er une carte des produits r\u00e9gionaux,MRC,2026,R\u00e9alis\u00e9e,100,9000,9200\n3.2,Transformation et mise en march\u00e9 de proximit\u00e9,\u00c9tudier la faisabilit\u00e9 d'un abattoir de proximit\u00e9,MRC,2027,En cours,30,25000,7000\n3.3,Transformation et mise en march\u00e9 de proximit\u00e9,Soutenir les march\u00e9s publics saisonniers,Municipalit\u00e9s,2028,En cours,45,20000,8000\n3.4,Transformation et mise en march\u00e9 de proximit\u00e9,D\u00e9velopper l'agrotourisme sur la route des saveurs,Tourisme r\u00e9gional,2029,Non amorc\u00e9e,0,35000,0\n4.1,Cohabitation et communication,Produire un d\u00e9pliant sur la cohabitation en zone agricole,MRC,2026,R\u00e9alis\u00e9e,100,4000,3800\n4.2,Cohabitation et communication,Former les \u00e9lus aux enjeux agricoles,MRC,2026,Non amorc\u00e9e,0,3000,0\n4.3,Cohabitation et communication,Publier un bilan annuel du PDZA,MRC,2027,Non amorc\u00e9e,0,2000,0\n5.1,Adaptation aux changements climatiques,R\u00e9aliser un portrait des risques climatiques agricoles,MRC,2027,En cours,25,18000,4500\n5.2,Adaptation aux changements climatiques,Soutenir l'implantation de haies brise-vent,Club-conseil,2028,En cours,30,30000,9000\n5.3,Adaptation aux changements climatiques,Promouvoir la gestion de l'eau \u00e0 la ferme,MAPAQ,2029,Non amorc\u00e9e,0,15000,0\n5.4,Adaptation aux changements climatiques,Suivre les superficies en cultures de couverture,MRC,2031,Non amorc\u00e9e,0,5000,0\n"), indicateurs: d3.csvParse("annee,entreprises_agricoles,superficie_cultivee_ha,entreprises_bio,haies_km\n2021,412,38250,31,12\n2022,405,38100,34,14\n2023,401,37980,38,17\n2024,398,37900,41,21\n2025,396,37950,45,26\n2026,397,38120,49,33\n") };
+    const calcs = {}, draws = {}, order = [];
+    const run = (n) => document.querySelectorAll('[data-draw="' + n + '"]').forEach((el) => { try { draws[n](el); } catch (e) { console.error(n, e); } });
+    const api = {
+      colors: ['var(--chart-1)'],
+      calc: (id, o) => { calcs[id] = o; },
+      data: (id) => {
+        if (files[id]) return { status: 'ok', data: files[id] };
+        const c = calcs[id];
+        if (!c) return { status: 'missing', data: [] };
+        return { status: 'ok', data: c.fn(...c.inputs.map((i) => api.data(i).data)) };
+      },
+      draw: (n, fn) => { if (fn) { draws[n] = fn; order.push(n); } else run(n); },
+      runAll: () => order.forEach(run)
+    };
+    return api;
+  })();
+</script>
+</head>
+<body>
+<div id="dash-root">
+<style>
+  .pd { font-family: var(--font-anthropic-sans); color: var(--color-fg); display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
+  .pd-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+  .pd-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--cds-gap-lg); }
+  .pd-hero-text { flex: 1 1 320px; min-width: 0; }
+  .pd-badge { display: inline-block; margin: 0 0 var(--cds-gap-sm); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); border: 1px dashed var(--color-border-line); border-radius: 999px; padding: 2px var(--cds-pad-sm); }
+  .pd-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: calc(var(--cds-font-size-title) * 1.35); line-height: 1.15; margin: 0; }
+  .pd-sub { margin: var(--cds-gap-xs) 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .pd-lede { margin: 0; font-size: var(--cds-font-size-heading); line-height: 1.45; max-width: 46em; }
+  .pd-lede b { font-variant-numeric: tabular-nums; }
+  .pd-lede .pd-bad { color: var(--color-bad); }
+  .pd-ring { flex: 0 0 auto; width: 150px; height: 150px; }
+  .pd-ring text.big { font-family: var(--font-anthropic-serif); font-size: 30px; fill: var(--color-fg); }
+  .pd-ring text.small { font-size: var(--cds-font-size-caption); fill: var(--cds-text-secondary); }
+  .pd-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--cds-gap-md); }
+  .pd-tile { border-top: 3px solid var(--accent, var(--color-border-line)); }
+  .pd-tile-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-xs); }
+  .pd-tile-value { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; margin: 0; }
+  .pd-of { font-size: var(--cds-font-size-body); color: var(--color-fg-muted); font-family: var(--font-anthropic-sans); }
+  .pd-tile-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-sm) 0 0; }
+  .pd-meter { height: 6px; border-radius: 3px; background: var(--cds-chart-grid); margin-top: var(--cds-gap-sm); overflow: hidden; }
+  .pd-meter > span { display: block; height: 100%; border-radius: 3px; }
+  .pd-bad { color: var(--color-bad); }
+  .pd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--cds-gap-md); }
+  .pd-h { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .pd-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-xs) 0 var(--cds-gap-md); }
+  .pd-chart { position: relative; min-height: 200px; }
+  .pd-chart text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); }
+  .pd-chart .pd-lab { fill: var(--color-fg); }
+  .pd-tip { position: absolute; z-index: 2; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; opacity: 0; }
+  .pd-donut-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cds-gap-lg); }
+  .pd-donut { position: relative; width: 190px; height: 190px; flex: 0 0 auto; }
+  .pd-donut text.big { font-family: var(--font-anthropic-serif); font-size: 32px; fill: var(--color-fg); }
+  .pd-donut text.small { font-size: var(--cds-font-size-caption); fill: var(--cds-text-secondary); }
+  .pd-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--cds-gap-sm); font-size: var(--cds-font-size-body); }
+  .pd-legend.inline { flex-direction: row; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: var(--cds-gap-sm); }
+  .pd-legend li { display: flex; align-items: center; gap: var(--cds-gap-sm); }
+  .pd-legend b { font-variant-numeric: tabular-nums; margin-left: auto; padding-left: var(--cds-gap-md); }
+  .pd-sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; background: var(--cds-chart-muted); }
+  .pd-ind-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--cds-gap-md); }
+  .pd-ind { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); }
+  .pd-ind-value { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-title); margin: 0; font-variant-numeric: tabular-nums; }
+  .pd-ind-delta { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-xs) 0 var(--cds-gap-sm); }
+  .pd-up { color: var(--color-ok); font-weight: var(--cds-font-weight-medium); }
+  .pd-down { color: var(--color-bad); font-weight: var(--cds-font-weight-medium); }
+  .pd-spark { height: 52px; position: relative; }
+  .pd-row { display: flex; align-items: center; justify-content: space-between; gap: var(--cds-gap-sm); flex-wrap: wrap; }
+  .pd-tablewrap { overflow-x: auto; margin-top: var(--cds-gap-md); }
+  .pd-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); }
+  .pd-table th { text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .pd-table td { padding: var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); vertical-align: middle; }
+  .pd-table td.pd-act { min-width: 220px; }
+  .pd-num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pd-muted { color: var(--color-fg-muted); }
+  .pd-pill { display: inline-block; border-radius: 999px; padding: 1px var(--cds-pad-sm); font-size: var(--cds-font-size-caption); border: 1px solid currentColor; white-space: nowrap; }
+  .pd-pill.ok { color: var(--color-ok); }
+  .pd-pill.cours { color: var(--color-warn); }
+  .pd-pill.non { color: var(--color-fg-muted); }
+  .pd-pill.bad { color: var(--color-bad); }
+  .pd-prog { display: flex; align-items: center; gap: var(--cds-gap-sm); min-width: 120px; }
+  .pd-prog .bar { flex: 1; height: 6px; border-radius: 3px; background: var(--cds-chart-grid); overflow: hidden; }
+  .pd-prog .bar > span { display: block; height: 100%; border-radius: 3px; }
+  .pd-prog .v { font-variant-numeric: tabular-nums; font-size: var(--cds-font-size-caption); width: 3.2em; text-align: right; }
+  .pd-foot { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; }
+</style>
+
+<div class="pd">
+  <header class="pd-hero" id="entete">
+    <div class="pd-hero-text">
+      <p class="pd-badge">Démonstration · données fictives</p>
+      <h1 class="pd-title">Suivi du PDZA 2026-2031</h1>
+      <p class="pd-sub">MRC fictive · plan d'action de la zone agricole · mis à jour le 18 novembre 2026</p>
+      <p class="pd-lede" id="resume"><b data-draw="k-real" data-source="kpis" data-field="realisees" data-row="0">—</b> actions sur <b data-draw="k-total" data-source="kpis" data-field="total" data-row="0">—</b> sont réalisées et <b data-draw="k-budget" data-source="kpis" data-field="budget_pct" data-row="0">—</b> du budget est engagé. <span class="pd-bad"><b data-draw="k-retard" data-source="kpis" data-field="en_retard" data-row="0">—</b> actions prévues pour 2026</span> ne sont pas encore terminées.</p>
+    </div>
+    <div class="pd-ring" id="avancement-global" data-draw="ring" data-source="kpis" data-field="avancement_global" data-row="0"></div>
+  </header>
+
+  <div class="pd-tiles" id="indicateurs-cles">
+    <div class="pd-card pd-tile" id="tuile-realisees" style="--accent: var(--color-ok)">
+      <p class="pd-tile-label">Actions réalisées</p>
+      <p class="pd-tile-value"><span data-draw="k-real" data-source="kpis" data-field="realisees" data-row="0">—</span><span class="pd-of"> / <span data-draw="k-total" data-source="kpis" data-field="total" data-row="0">—</span></span></p>
+      <div class="pd-meter" data-draw="m-real" data-source="kpis"></div>
+    </div>
+    <div class="pd-card pd-tile" id="tuile-encours" style="--accent: var(--color-warn)">
+      <p class="pd-tile-label">Actions en cours</p>
+      <p class="pd-tile-value"><span data-draw="k-cours" data-source="kpis" data-field="en_cours" data-row="0">—</span></p>
+      <p class="pd-tile-sub"><span data-draw="k-non" data-source="kpis" data-field="non_amorcees" data-row="0">—</span> autres pas encore amorcées</p>
+    </div>
+    <div class="pd-card pd-tile" id="tuile-retard" style="--accent: var(--color-bad)">
+      <p class="pd-tile-label">En retard</p>
+      <p class="pd-tile-value pd-bad"><span data-draw="k-retard" data-source="kpis" data-field="en_retard" data-row="0">—</span></p>
+      <p class="pd-tile-sub">échéance 2026, action non terminée</p>
+    </div>
+    <div class="pd-card pd-tile" id="tuile-budget" style="--accent: var(--color-fg-muted)">
+      <p class="pd-tile-label">Budget engagé</p>
+      <p class="pd-tile-value"><span data-draw="k-budget" data-source="kpis" data-field="budget_pct" data-row="0">—</span></p>
+      <div class="pd-meter" data-draw="m-budget" data-source="kpis"></div>
+      <p class="pd-tile-sub"><span data-draw="k-engage" data-source="kpis" data-field="budget_engage" data-row="0">—</span> sur <span data-draw="k-prevu" data-source="kpis" data-field="budget_prevu" data-row="0">—</span></p>
+    </div>
+  </div>
+
+  <div class="pd-grid">
+    <section class="pd-card" id="repartition-statut">
+      <h2 class="pd-h">Où en sont les actions</h2>
+      <p class="pd-note">Répartition des actions du plan selon leur statut.</p>
+      <div class="pd-donut-wrap">
+        <div class="pd-donut pd-chart" data-draw="donut" data-source="par_statut"></div>
+        <ul class="pd-legend">
+          <li><span class="pd-sw" data-k="realisees"></span>Réalisées <b data-draw="leg" data-st="Réalisée" data-source="par_statut" data-where="statut=Réalisée" data-field="actions">—</b></li>
+          <li><span class="pd-sw" data-k="en_cours"></span>En cours <b data-draw="leg" data-st="En cours" data-source="par_statut" data-where="statut=En cours" data-field="actions">—</b></li>
+          <li><span class="pd-sw" data-k="non_amorcees"></span>Non amorcées <b data-draw="leg" data-st="Non amorcée" data-source="par_statut" data-where="statut=Non amorcée" data-field="actions">—</b></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="pd-card" id="avancement-orientation">
+      <h2 class="pd-h">Avancement par orientation</h2>
+      <p class="pd-note">Moyenne du pourcentage d'avancement des actions de chaque orientation.</p>
+      <div class="pd-chart" data-draw="orient" data-source="par_orientation"></div>
+    </section>
+
+    <section class="pd-card" id="budget-orientation">
+      <h2 class="pd-h">Budget engagé par orientation</h2>
+      <p class="pd-note">La barre pâle est le budget prévu, la barre pleine le montant déjà engagé.</p>
+      <div class="pd-chart" data-draw="budget" data-source="par_orientation"></div>
+    </section>
+
+    <section class="pd-card" id="echeancier">
+      <h2 class="pd-h">Échéancier du plan</h2>
+      <p class="pd-note">Nombre d'actions par année d'échéance, selon leur statut.</p>
+      <ul class="pd-legend inline">
+        <li><span class="pd-sw" data-k="realisees"></span>Réalisées</li>
+        <li><span class="pd-sw" data-k="en_cours"></span>En cours</li>
+        <li><span class="pd-sw" data-k="non_amorcees"></span>Non amorcées</li>
+      </ul>
+      <div class="pd-chart" data-draw="annees" data-source="par_annee"></div>
+    </section>
+  </div>
+
+  <section class="pd-card" id="territoire">
+    <h2 class="pd-h">Indicateurs du territoire agricole</h2>
+    <p class="pd-note">Valeur 2026 et variation depuis 2021.</p>
+    <div class="pd-ind-grid">
+      <div class="pd-ind" id="ind-entreprises">
+        <p class="pd-tile-label">Entreprises agricoles</p>
+        <p class="pd-ind-value"><span data-draw="iv" data-ind="entreprises_agricoles" data-source="ind_resume" data-where="indicateur=entreprises_agricoles" data-field="v2026">—</span></p>
+        <p class="pd-ind-delta"><span data-draw="idelta" data-ind="entreprises_agricoles" data-source="ind_resume" data-where="indicateur=entreprises_agricoles" data-field="variation_pct">—</span> depuis 2021</p>
+        <div class="pd-spark" data-draw="spark" data-ind="entreprises_agricoles" data-source="indicateurs" data-field="entreprises_agricoles"></div>
+      </div>
+      <div class="pd-ind" id="ind-bio">
+        <p class="pd-tile-label">Entreprises biologiques</p>
+        <p class="pd-ind-value"><span data-draw="iv" data-ind="entreprises_bio" data-source="ind_resume" data-where="indicateur=entreprises_bio" data-field="v2026">—</span></p>
+        <p class="pd-ind-delta"><span data-draw="idelta" data-ind="entreprises_bio" data-source="ind_resume" data-where="indicateur=entreprises_bio" data-field="variation_pct">—</span> depuis 2021</p>
+        <div class="pd-spark" data-draw="spark" data-ind="entreprises_bio" data-source="indicateurs" data-field="entreprises_bio"></div>
+      </div>
+      <div class="pd-ind" id="ind-superficie">
+        <p class="pd-tile-label">Superficie cultivée (ha)</p>
+        <p class="pd-ind-value"><span data-draw="iv" data-ind="superficie_cultivee_ha" data-source="ind_resume" data-where="indicateur=superficie_cultivee_ha" data-field="v2026">—</span></p>
+        <p class="pd-ind-delta"><span data-draw="idelta" data-ind="superficie_cultivee_ha" data-source="ind_resume" data-where="indicateur=superficie_cultivee_ha" data-field="variation_pct">—</span> depuis 2021</p>
+        <div class="pd-spark" data-draw="spark" data-ind="superficie_cultivee_ha" data-source="indicateurs" data-field="superficie_cultivee_ha"></div>
+      </div>
+      <div class="pd-ind" id="ind-haies">
+        <p class="pd-tile-label">Haies brise-vent (km)</p>
+        <p class="pd-ind-value"><span data-draw="iv" data-ind="haies_km" data-source="ind_resume" data-where="indicateur=haies_km" data-field="v2026">—</span></p>
+        <p class="pd-ind-delta"><span data-draw="idelta" data-ind="haies_km" data-source="ind_resume" data-where="indicateur=haies_km" data-field="variation_pct">—</span> depuis 2021</p>
+        <div class="pd-spark" data-draw="spark" data-ind="haies_km" data-source="indicateurs" data-field="haies_km"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pd-card" id="liste-actions">
+    <div class="pd-row">
+      <h2 class="pd-h">Plan d'action</h2>
+      <select class="dash-select" id="filtre-orientation" aria-label="Orientation">
+        <option value="">Toutes les orientations</option>
+        <option value="Relève et établissement">Relève et établissement</option>
+        <option value="Mise en valeur des terres et agroenvironnement">Terres et agroenvironnement</option>
+        <option value="Transformation et mise en marché de proximité">Transformation et mise en marché</option>
+        <option value="Cohabitation et communication">Cohabitation et communication</option>
+        <option value="Adaptation aux changements climatiques">Adaptation aux changements climatiques</option>
+      </select>
+    </div>
+    <div class="pd-tablewrap">
+      <table class="pd-table" data-source="actions" data-row-key="id">
+        <thead><tr>
+          <th data-field="id">No</th>
+          <th data-field="action">Action</th>
+          <th data-field="statut">Statut</th>
+          <th data-field="avancement_pct">Avancement</th>
+          <th data-field="echeance" class="pd-num">Échéance</th>
+          <th data-field="responsable">Responsable</th>
+        </tr></thead>
+        <tbody data-draw="table-actions"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="pd-foot">Exemple produit pour illustrer un tableau de bord de suivi. Les actions, les budgets et les indicateurs sont inventés.</p>
+</div>
+
+<script>
+  dash.calc('kpis', {
+    title: 'Sommaire du plan d’action',
+    description: 'Compte des actions par statut, actions en retard (échéance 2026 non réalisée), budget et avancement moyen.',
+    inputs: ['actions'],
+    fn: (actions) => {
+      const n = (v) => Number(v) || 0;
+      const prevu = d3.sum(actions, (a) => n(a.budget_prevu));
+      const engage = d3.sum(actions, (a) => n(a.budget_engage));
+      return [{
+        total: actions.length,
+        realisees: actions.filter((a) => a.statut === 'Réalisée').length,
+        en_cours: actions.filter((a) => a.statut === 'En cours').length,
+        non_amorcees: actions.filter((a) => a.statut === 'Non amorcée').length,
+        en_retard: actions.filter((a) => n(a.echeance) <= 2026 && a.statut !== 'Réalisée').length,
+        budget_prevu: prevu,
+        budget_engage: engage,
+        budget_pct: prevu ? Math.round((engage / prevu) * 100) : 0,
+        avancement_global: actions.length ? Math.round(d3.mean(actions, (a) => n(a.avancement_pct))) : 0
+      }];
+    }
+  });
+
+  dash.calc('par_statut', {
+    title: 'Actions par statut',
+    description: 'Nombre d’actions réalisées, en cours et non amorcées.',
+    inputs: ['actions'],
+    fn: (actions) => ['Réalisée', 'En cours', 'Non amorcée'].map((statut) => ({ statut, actions: actions.filter((a) => a.statut === statut).length }))
+  });
+
+  dash.calc('par_orientation', {
+    title: 'Avancement et budget par orientation',
+    description: 'Par orientation : nombre d’actions, avancement moyen, budget prévu et engagé.',
+    inputs: ['actions'],
+    fn: (actions) => {
+      const court = { 'Relève et établissement': 'Relève', 'Mise en valeur des terres et agroenvironnement': 'Terres et agroenvironnement', 'Transformation et mise en marché de proximité': 'Mise en marché', 'Cohabitation et communication': 'Cohabitation', 'Adaptation aux changements climatiques': 'Climat' };
+      return d3.rollups(actions, (v) => v, (a) => a.orientation).map(([orientation, v]) => ({
+        orientation,
+        court: court[orientation] || orientation,
+        actions: v.length,
+        avancement_moyen: Math.round(d3.mean(v, (a) => Number(a.avancement_pct) || 0)),
+        budget_prevu: d3.sum(v, (a) => Number(a.budget_prevu) || 0),
+        budget_engage: d3.sum(v, (a) => Number(a.budget_engage) || 0)
+      }));
+    }
+  });
+
+  dash.calc('par_annee', {
+    title: 'Actions par année d’échéance',
+    description: 'Pour chaque année de 2026 à 2031, nombre d’actions réalisées, en cours et non amorcées.',
+    inputs: ['actions'],
+    fn: (actions) => d3.range(2026, 2032).map((annee) => {
+      const v = actions.filter((a) => Number(a.echeance) === annee);
+      return {
+        annee,
+        realisees: v.filter((a) => a.statut === 'Réalisée').length,
+        en_cours: v.filter((a) => a.statut === 'En cours').length,
+        non_amorcees: v.filter((a) => a.statut === 'Non amorcée').length
+      };
+    })
+  });
+
+  dash.calc('ind_resume', {
+    title: 'Indicateurs : 2026 et variation depuis 2021',
+    description: 'Valeur 2021, valeur 2026 et variation en pourcentage pour chaque indicateur du territoire.',
+    inputs: ['indicateurs'],
+    fn: (indicateurs) => {
+      const rows = indicateurs.map((d) => Object.fromEntries(Object.entries(d).map(([k, v]) => [k, Number(v)])));
+      const a = rows.find((d) => d.annee === 2021) || {};
+      const b = rows.find((d) => d.annee === 2026) || {};
+      return ['entreprises_agricoles', 'entreprises_bio', 'superficie_cultivee_ha', 'haies_km'].map((indicateur) => ({
+        indicateur,
+        v2021: a[indicateur],
+        v2026: b[indicateur],
+        variation_pct: a[indicateur] ? Math.round(((b[indicateur] - a[indicateur]) / a[indicateur]) * 1000) / 10 : null
+      }));
+    }
+  });
+
+  window.PD = {
+    ST: { realisees: 'var(--color-ok)', en_cours: 'var(--color-warn)', non_amorcees: 'var(--cds-chart-muted)' },
+    fr: d3.formatLocale({ decimal: ',', thousands: ' ', grouping: [3], currency: ['', ' $'] }),
+    ok: (r, el) => {
+      if (r.status === 'ok') return true;
+      if (r.status === 'error' && el) { const p = document.createElement('p'); p.className = 'pd-note'; p.textContent = 'Échec du chargement'; el.append(p); }
+      return false;
+    },
+    tip: (el) => d3.select(el).append('div').attr('class', 'pd-tip'),
+    show: (tip, el, ev, text) => {
+      const [mx, my] = d3.pointer(ev, el);
+      tip.text(text).style('opacity', 1);
+      const w = tip.node().offsetWidth;
+      tip.style('left', Math.max(0, Math.min(mx + 12, el.clientWidth - w)) + 'px').style('top', Math.max(0, my - 34) + 'px');
+    }
+  };
+  window.PD.num = window.PD.fr.format(',.0f');
+  window.PD.money = window.PD.fr.format('$,.0f');
+  document.querySelectorAll('.pd-sw').forEach((s) => { s.style.background = window.PD.ST[s.dataset.k] || ''; });
+</script>
+
+<script>
+  const kpiDraw = (name, field, fmt) => dash.draw(name, (el) => {
+    const k = dash.data('kpis');
+    if (k.status !== 'ok' || !k.data || !k.data.length) { el.textContent = '—'; return; }
+    const v = k.data[0][field];
+    el.textContent = fmt ? fmt(v) : String(v);
+  });
+  kpiDraw('k-real', 'realisees');
+  kpiDraw('k-total', 'total');
+  kpiDraw('k-retard', 'en_retard');
+  kpiDraw('k-cours', 'en_cours');
+  kpiDraw('k-non', 'non_amorcees');
+  kpiDraw('k-budget', 'budget_pct', (v) => v + ' %');
+  kpiDraw('k-engage', 'budget_engage', (v) => window.PD.money(v));
+  kpiDraw('k-prevu', 'budget_prevu', (v) => window.PD.money(v));
+
+  const meterDraw = (name, frac, color) => dash.draw(name, (el) => {
+    const k = dash.data('kpis');
+    el.replaceChildren();
+    if (k.status !== 'ok' || !k.data || !k.data.length) return;
+    const s = document.createElement('span');
+    s.style.width = Math.max(0, Math.min(100, frac(k.data[0]) * 100)) + '%';
+    s.style.background = color;
+    el.append(s);
+  });
+  meterDraw('m-real', (d) => d.total ? d.realisees / d.total : 0, 'var(--color-ok)');
+  meterDraw('m-budget', (d) => d.budget_pct / 100, 'var(--color-fg-muted)');
+
+  dash.draw('ring', (el) => {
+    const k = dash.data('kpis');
+    el.replaceChildren();
+    if (k.status !== 'ok' || !k.data || !k.data.length) return;
+    const v = k.data[0].avancement_global;
+    const S = 150, R = S / 2 - 6;
+    const svg = d3.select(el).append('svg').attr('width', S).attr('height', S).attr('viewBox', `0 0 ${S} ${S}`)
+      .attr('role', 'img').attr('aria-label', `Avancement global du plan : ${v} %`);
+    const g = svg.append('g').attr('transform', `translate(${S / 2},${S / 2})`);
+    const arc = d3.arc().innerRadius(R - 12).outerRadius(R).cornerRadius(6).startAngle(0);
+    g.append('path').attr('d', arc({ endAngle: 2 * Math.PI })).style('fill', 'var(--cds-chart-grid)');
+    const fg = g.append('path').style('fill', dash.colors[0]);
+    const end = (2 * Math.PI * v) / 100;
+    const anim = !el.dataset.done && window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+    if (anim) {
+      fg.transition().duration(900).ease(d3.easeCubicOut).attrTween('d', () => (t) => arc({ endAngle: end * t }));
+    } else fg.attr('d', arc({ endAngle: end }));
+    el.dataset.done = '1';
+    g.append('text').attr('class', 'big').attr('text-anchor', 'middle').attr('dy', '0.15em').text(v + ' %');
+    g.append('text').attr('class', 'small').attr('text-anchor', 'middle').attr('dy', '1.9em').text('avancement global');
+  });
+</script>
+
+<script>
+  dash.draw('leg', (el) => {
+    const r = dash.data('par_statut');
+    if (r.status !== 'ok' || !Array.isArray(r.data)) { el.textContent = '—'; return; }
+    const row = r.data.find((d) => d.statut === el.dataset.st);
+    el.textContent = row ? String(row.actions) : '—';
+  });
+
+  dash.draw('donut', (el) => {
+    const r = dash.data('par_statut');
+    el.replaceChildren();
+    if (!window.PD.ok(r, el) || !Array.isArray(r.data)) return;
+    const keys = { 'Réalisée': 'realisees', 'En cours': 'en_cours', 'Non amorcée': 'non_amorcees' };
+    const S = 190, R = S / 2;
+    const total = d3.sum(r.data, (d) => d.actions);
+    const svg = d3.select(el).append('svg').attr('width', S).attr('height', S).attr('viewBox', `0 0 ${S} ${S}`)
+      .attr('role', 'img').attr('aria-label', 'Répartition des actions par statut : ' + r.data.map((d) => `${d.statut} ${d.actions}`).join(', '));
+    const g = svg.append('g').attr('transform', `translate(${R},${R})`);
+    const pie = d3.pie().value((d) => d.actions).sort(null).padAngle(0.025);
+    const arc = d3.arc().innerRadius(R * 0.64).outerRadius(R - 2).cornerRadius(4);
+    const tip = window.PD.tip(el);
+    g.selectAll('path').data(pie(r.data)).join('path').attr('d', arc)
+      .style('fill', (d) => window.PD.ST[keys[d.data.statut]])
+      .on('mousemove', (ev, d) => window.PD.show(tip, el, ev, `${d.data.statut} : ${d.data.actions} actions (${Math.round((d.data.actions / total) * 100)} %)`))
+      .on('mouseleave', () => tip.style('opacity', 0));
+    g.append('text').attr('class', 'big').attr('text-anchor', 'middle').attr('dy', '0.2em').text(total);
+    g.append('text').attr('class', 'small').attr('text-anchor', 'middle').attr('dy', '1.9em').text('actions');
+  });
+
+  dash.draw('orient', (el) => {
+    const r = dash.data('par_orientation');
+    el.replaceChildren();
+    if (!window.PD.ok(r, el) || !Array.isArray(r.data)) return;
+    const rows = r.data;
+    const W = Math.max(el.clientWidth, 260), barH = 10, rowH = 44;
+    const H = rows.length * rowH;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', 'Avancement moyen par orientation : ' + rows.map((d) => `${d.court} ${d.avancement_moyen} %`).join(', '));
+    const x = d3.scaleLinear().domain([0, 100]).range([0, W]);
+    const tip = window.PD.tip(el);
+    rows.forEach((d, i) => {
+      const y = i * rowH;
+      svg.append('text').attr('class', 'pd-lab').attr('x', 0).attr('y', y + 14).text(d.court);
+      svg.append('text').attr('x', W).attr('y', y + 14).attr('text-anchor', 'end').text(`${d.avancement_moyen} % · ${d.actions} actions`);
+      svg.append('rect').attr('x', 0).attr('y', y + 22).attr('width', W).attr('height', barH).attr('rx', barH / 2).style('fill', 'var(--cds-chart-grid)');
+      svg.append('rect').attr('x', 0).attr('y', y + 22).attr('width', Math.max(barH, x(d.avancement_moyen))).attr('height', barH).attr('rx', barH / 2)
+        .style('fill', dash.colors[0])
+        .on('mousemove', (ev) => window.PD.show(tip, el, ev, `${d.orientation} : ${d.avancement_moyen} %`))
+        .on('mouseleave', () => tip.style('opacity', 0));
+    });
+  });
+
+  dash.draw('budget', (el) => {
+    const r = dash.data('par_orientation');
+    el.replaceChildren();
+    if (!window.PD.ok(r, el) || !Array.isArray(r.data)) return;
+    const rows = r.data;
+    const W = Math.max(el.clientWidth, 260), barH = 12, rowH = 44;
+    const H = rows.length * rowH;
+    const max = d3.max(rows, (d) => d.budget_prevu) || 1;
+    const x = d3.scaleLinear().domain([0, max]).range([0, W]);
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', 'Budget engagé et prévu par orientation');
+    const tip = window.PD.tip(el);
+    rows.forEach((d, i) => {
+      const y = i * rowH;
+      svg.append('text').attr('class', 'pd-lab').attr('x', 0).attr('y', y + 14).text(d.court);
+      svg.append('text').attr('x', W).attr('y', y + 14).attr('text-anchor', 'end').text(`${window.PD.money(d.budget_engage)} / ${window.PD.money(d.budget_prevu)}`);
+      svg.append('rect').attr('x', 0).attr('y', y + 21).attr('width', x(d.budget_prevu)).attr('height', barH).attr('rx', 3)
+        .style('fill', dash.colors[0]).style('opacity', 0.22);
+      svg.append('rect').attr('x', 0).attr('y', y + 21).attr('width', x(d.budget_engage)).attr('height', barH).attr('rx', 3)
+        .style('fill', dash.colors[0]);
+      svg.append('rect').attr('x', 0).attr('y', y + 18).attr('width', W).attr('height', barH + 6).style('fill', 'transparent')
+        .on('mousemove', (ev) => window.PD.show(tip, el, ev, `${d.orientation} : ${window.PD.money(d.budget_engage)} engagés sur ${window.PD.money(d.budget_prevu)} (${d.budget_prevu ? Math.round((d.budget_engage / d.budget_prevu) * 100) : 0} %)`))
+        .on('mouseleave', () => tip.style('opacity', 0));
+    });
+  });
+
+  dash.draw('annees', (el) => {
+    const r = dash.data('par_annee');
+    el.replaceChildren();
+    if (!window.PD.ok(r, el) || !Array.isArray(r.data)) return;
+    const rows = r.data;
+    const keys = ['realisees', 'en_cours', 'non_amorcees'];
+    const noms = { realisees: 'réalisées', en_cours: 'en cours', non_amorcees: 'non amorcées' };
+    const W = Math.max(el.clientWidth, 260), H = 210, m = { t: 22, r: 4, b: 24, l: 24 };
+    const stack = d3.stack().keys(keys)(rows);
+    const maxT = d3.max(rows, (d) => d.realisees + d.en_cours + d.non_amorcees) || 1;
+    const x = d3.scaleBand().domain(rows.map((d) => d.annee)).range([m.l, W - m.r]).padding(0.35);
+    const y = d3.scaleLinear().domain([0, maxT]).nice().range([H - m.b, m.t]);
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', 'Échéancier : ' + rows.map((d) => `${d.annee} ${d.realisees + d.en_cours + d.non_amorcees} actions`).join(', '));
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(Math.min(maxT, 4)).tickFormat(d3.format('d')).tickSize(-(W - m.l - m.r)))
+      .call((g) => { g.select('.domain').remove(); g.selectAll('line').style('stroke', 'var(--cds-chart-grid)'); });
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickFormat(d3.format('d')).tickSize(0))
+      .call((g) => { g.select('.domain').style('stroke', 'var(--cds-chart-axis)'); g.selectAll('text').attr('dy', '1.1em'); });
+    const tip = window.PD.tip(el);
+    stack.forEach((layer) => {
+      svg.append('g').selectAll('rect').data(layer).join('rect')
+        .attr('x', (d) => x(d.data.annee)).attr('width', x.bandwidth())
+        .attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1])))
+        .style('fill', window.PD.ST[layer.key])
+        .on('mousemove', (ev, d) => window.PD.show(tip, el, ev, `${d.data.annee} : ${d.data[layer.key]} ${noms[layer.key]}`))
+        .on('mouseleave', () => tip.style('opacity', 0));
+    });
+    svg.append('g').selectAll('text').data(rows).join('text').attr('class', 'pd-lab')
+      .attr('x', (d) => x(d.annee) + x.bandwidth() / 2).attr('y', (d) => y(d.realisees + d.en_cours + d.non_amorcees) - 6)
+      .attr('text-anchor', 'middle').text((d) => d.realisees + d.en_cours + d.non_amorcees);
+  });
+</script>
+
+<script>
+  dash.draw('iv', (el) => {
+    const r = dash.data('ind_resume');
+    if (r.status !== 'ok' || !Array.isArray(r.data)) { el.textContent = '—'; return; }
+    const row = r.data.find((d) => d.indicateur === el.dataset.ind);
+    el.textContent = row && row.v2026 != null ? window.PD.num(row.v2026) : '—';
+  });
+
+  dash.draw('idelta', (el) => {
+    const r = dash.data('ind_resume');
+    el.className = '';
+    if (r.status !== 'ok' || !Array.isArray(r.data)) { el.textContent = '—'; return; }
+    const row = r.data.find((d) => d.indicateur === el.dataset.ind);
+    if (!row || row.variation_pct == null) { el.textContent = '—'; return; }
+    const v = row.variation_pct;
+    el.className = v >= 0 ? 'pd-up' : 'pd-down';
+    el.textContent = (v > 0 ? '▲ +' : v < 0 ? '▼ ' : '') + window.PD.fr.format(',.1f')(v) + ' %';
+  });
+
+  dash.draw('spark', (el) => {
+    const r = dash.data('indicateurs');
+    el.replaceChildren();
+    if (r.status !== 'ok' || !Array.isArray(r.data)) return;
+    const f = el.dataset.ind;
+    const rows = r.data.map((d) => ({ annee: Number(d.annee), v: Number(d[f]) }));
+    const W = Math.max(el.clientWidth, 120), H = 52, p = 5;
+    const x = d3.scaleLinear().domain(d3.extent(rows, (d) => d.annee)).range([p, W - p]);
+    const ext = d3.extent(rows, (d) => d.v);
+    const pad = (ext[1] - ext[0]) * 0.2 || 1;
+    const y = d3.scaleLinear().domain([ext[0] - pad, ext[1] + pad]).range([H - p, p]);
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', `Évolution de 2021 à 2026 : ${rows.map((d) => window.PD.num(d.v)).join(', ')}`);
+    svg.append('path').datum(rows).style('fill', dash.colors[0]).style('opacity', 0.12)
+      .attr('d', d3.area().x((d) => x(d.annee)).y0(H).y1((d) => y(d.v)));
+    svg.append('path').datum(rows).attr('fill', 'none').style('stroke', dash.colors[0]).attr('stroke-width', 2)
+      .attr('d', d3.line().x((d) => x(d.annee)).y((d) => y(d.v)));
+    const tip = window.PD.tip(el);
+    svg.selectAll('circle').data(rows).join('circle').attr('cx', (d) => x(d.annee)).attr('cy', (d) => y(d.v))
+      .attr('r', (d, i) => (i === rows.length - 1 ? 3.5 : 6)).style('fill', (d, i) => (i === rows.length - 1 ? dash.colors[0] : 'transparent'))
+      .on('mousemove', (ev, d) => window.PD.show(tip, el, ev, `${d.annee} : ${window.PD.num(d.v)}`))
+      .on('mouseleave', () => tip.style('opacity', 0));
+  });
+</script>
+
+<script>
+  window.pdFiltre = '';
+  document.querySelectorAll('#filtre-orientation').forEach((s) => s.addEventListener('change', () => { window.pdFiltre = s.value; dash.draw('table-actions'); }));
+
+  dash.draw('table-actions', (tb) => {
+    const r = dash.data('actions');
+    tb.replaceChildren();
+    if (r.status !== 'ok' || !Array.isArray(r.data)) return;
+    const rows = r.data.filter((a) => !window.pdFiltre || a.orientation === window.pdFiltre);
+    rows.forEach((a) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = a.id;
+      const td = (t, c) => { const e = document.createElement('td'); if (c) e.className = c; if (t != null) e.textContent = t; tr.append(e); return e; };
+      td(a.id, 'pd-muted');
+      td(a.action, 'pd-act');
+      const retard = Number(a.echeance) <= 2026 && a.statut !== 'Réalisée';
+      const s = td(null);
+      const pill = document.createElement('span');
+      pill.className = 'pd-pill ' + (retard ? 'bad' : a.statut === 'Réalisée' ? 'ok' : a.statut === 'En cours' ? 'cours' : 'non');
+      pill.textContent = retard ? a.statut + ' · en retard' : a.statut;
+      s.append(pill);
+      const pc = Number(a.avancement_pct) || 0;
+      const pcell = td(null);
+      const prog = document.createElement('div'); prog.className = 'pd-prog';
+      const bar = document.createElement('div'); bar.className = 'bar';
+      const fill = document.createElement('span'); fill.style.width = pc + '%';
+      fill.style.background = retard ? 'var(--color-bad)' : a.statut === 'Réalisée' ? 'var(--color-ok)' : dash.colors[0];
+      bar.append(fill);
+      const v = document.createElement('span'); v.className = 'v'; v.textContent = pc + ' %';
+      prog.append(bar, v); pcell.append(prog);
+      td(a.echeance, 'pd-num');
+      td(a.responsable, 'pd-muted');
+      tb.append(tr);
+    });
+  });
+</script>
+
+<p class="pd-foot" style="margin-top:14px">Conçu par Seguy Enock Fotazou, agr., M. Sc. · agronome et analyste en intelligence d'affaires · <a href="mailto:enockseguy@gmail.com">enockseguy@gmail.com</a></p>
+</div>
+<script>
+  dash.runAll();
+  let pdT; let pdW = window.innerWidth;
+  window.addEventListener('resize', () => { if (window.innerWidth === pdW) return; pdW = window.innerWidth; clearTimeout(pdT); pdT = setTimeout(() => dash.runAll(), 150); });
+</script>
+</body>
+</html>
