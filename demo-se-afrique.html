@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Démo – Tableau de bord de suivi-évaluation d'un projet de résilience alimentaire</title>
+<meta name="description" content="Démonstration d'un tableau de bord de suivi-évaluation (données fictives de type KoboToolbox).">
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<style>
+  :root {
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    --color-fg: #1f1e1c; --color-fg-muted: #6b6862; --color-bg: #faf9f6; --color-panel: #ffffff;
+    --color-border-line: #e4e1da; --color-ok: #2f8a4e; --color-warn: #c27a12; --color-bad: #c2412d;
+    --cds-font-size-caption: 12.5px; --cds-font-size-body: 14px; --cds-font-size-heading: 17px; --cds-font-size-title: 30px;
+    --cds-font-weight-medium: 600;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 22px; --cds-gap-xl: 32px;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 20px;
+    --cds-radius: 10px;
+    --cds-chart-grid: #ece9e2; --cds-chart-axis: #c9c5bc; --cds-chart-muted: #c9c5bc; --cds-text-secondary: #6b6862;
+    --cds-surface-popover: #ffffff; --cds-border: #e4e1da; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.12);
+    --chart-1: #2d6fb5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-fg: #f1efe9; --color-fg-muted: #a8a49b; --color-bg: #1b1a18; --color-panel: #252421;
+      --color-border-line: #3a3833; --color-ok: #5cbf7c; --color-warn: #e3a043; --color-bad: #ec6f5a;
+      --cds-chart-grid: #34322d; --cds-chart-axis: #55524b; --cds-chart-muted: #5d5a53; --cds-text-secondary: #a8a49b;
+      --cds-surface-popover: #2e2d29; --cds-border: #3a3833; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.5);
+      --chart-1: #6aa6e6;
+    }
+  }
+  html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-body); }
+  #dash-root { max-width: 1120px; margin: 0 auto; padding: 28px 20px 48px; }
+  .dash-select { font: inherit; font-size: var(--cds-font-size-caption); color: var(--color-fg); background-color: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 8px; padding: 6px 10px; }
+  a { color: var(--chart-1); }
+</style>
+</head>
+<body>
+<div id="dash-root">
+<script>
+window.SE_MENAGES = "id,annee,region,commune,sexe_chef,taille,sca,cat_sca,rcsi,beneficiaire,pratiques,rendement_mais\nM0001,2025,Nord,Darka,F,3,42,Acceptable,3,oui,0,1311\nM0002,2025,Nord,Darka,F,11,30,Limite,13,oui,1,1421\nM0003,2025,Nord,Darka,M,6,36,Acceptable,6,oui,0,1022\nM0004,2025,Nord,Darka,M,7,42,Acceptable,7,oui,0,1278\nM0005,2025,Nord,Darka,M,8,28,Limite,13,non,1,915\nM0006,2025,Nord,Darka,M,6,50,Acceptable,1,non,1,657\nM0007,2025,Nord,Darka,M,4,35,Limite,9,oui,1,1210\nM0008,2025,Nord,Darka,M,11,10,Pauvre,19,oui,0,1184\nM0009,2025,Nord,Darka,F,6,8,Pauvre,17,oui,1,1117\nM0010,2025,Nord,Darka,M,10,11,Pauvre,19,oui,0,1000\nM0011,2025,Nord,Darka,F,6,16,Pauvre,17,oui,2,1344\nM0012,2025,Nord,Darka,M,5,34,Limite,9,oui,1,1199\nM0013,2025,Nord,Darka,M,3,60,Acceptable,3,oui,0,1148\nM0014,2025,Nord,Darka,M,4,20,Pauvre,21,oui,0,1406\nM0015,2025,Nord,Darka,F,7,52,Acceptable,11,oui,0,1065\nM0016,2025,Nord,Darka,M,11,59,Acceptable,6,oui,1,951\nM0017,2025,Nord,Darka,M,3,23,Limite,17,oui,0,1226\nM0018,2025,Nord,Darka,F,11,67,Acceptable,4,oui,2,743\nM0019,2025,Nord,Darka,M,11,30,Limite,13,oui,1,810\nM0020,2025,Nord,Darka,M,10,14,Pauvre,12,non,2,1190\nM0021,2025,Nord,Darka,M,4,40,Acceptable,4,oui,2,1214\nM0022,2025,Nord,Darka,M,6,38,Acceptable,8,oui,1,1121\nM0023,2025,Nord,Darka,F,9,33,Limite,15,oui,0,839\nM0024,2025,Nord,Darka,F,3,28,Limite,12,oui,0,1340\nM0025,2025,Nord,Darka,M,11,61,Acceptable,5,non,0,1241\nM0026,2025,Nord,Darka,M,11,51,Acceptable,7,oui,1,1123\nM0027,2025,Nord,Darka,F,10,22,Limite,18,non,0,1213\nM0028,2025,Nord,Darka,M,7,10,Pauvre,16,non,0,1510\nM0029,2025,Nord,Mbal\u00e9,M,7,33,Limite,15,oui,0,1129\nM0030,2025,Nord,Mbal\u00e9,F,10,8,Pauvre,15,oui,0,1088\nM0031,2025,Nord,Mbal\u00e9,M,6,68,Acceptable,8,non,1,951\nM0032,2025,Nord,Mbal\u00e9,M,9,31,Limite,8,non,0,1010\nM0033,2025,Nord,Mbal\u00e9,M,7,52,Acceptable,7,oui,2,1211\nM0034,2025,Nord,Mbal\u00e9,M,4,8,Pauvre,20,non,0,1318\nM0035,2025,Nord,Mbal\u00e9,F,11,58,Acceptable,11,oui,0,1078\nM0036,2025,Nord,Mbal\u00e9,M,11,18,Pauvre,18,non,0,1102\nM0037,2025,Nord,Mbal\u00e9,F,7,10,Pauvre,16,non,2,1193\nM0038,2025,Nord,Mbal\u00e9,M,3,52,Acceptable,4,non,0,1145\nM0039,2025,Nord,Mbal\u00e9,F,10,36,Acceptable,5,oui,1,1280\nM0040,2025,Nord,Mbal\u00e9,M,5,40,Acceptable,6,oui,2,1105\nM0041,2025,Nord,Mbal\u00e9,M,3,24,Limite,10,non,1,898\nM0042,2025,Nord,Mbal\u00e9,M,9,42,Acceptable,11,oui,0,1333\nM0043,2025,Nord,Mbal\u00e9,M,3,11,Pauvre,22,non,0,1289\nM0044,2025,Nord,Mbal\u00e9,F,6,14,Pauvre,11,non,1,834\nM0045,2025,Nord,Mbal\u00e9,F,7,38,Acceptable,7,non,0,1231\nM0046,2025,Nord,Mbal\u00e9,M,4,48,Acceptable,3,non,0,1237\nM0047,2025,Nord,Mbal\u00e9,M,7,28,Limite,9,oui,0,1129\nM0048,2025,Nord,Mbal\u00e9,F,8,42,Acceptable,7,non,0,1055\nM0049,2025,Nord,Mbal\u00e9,M,11,48,Acceptable,6,non,2,1608\nM0050,2025,Nord,Mbal\u00e9,M,8,11,Pauvre,17,non,0,1202\nM0051,2025,Nord,Mbal\u00e9,M,11,55,Acceptable,2,non,0,1022\nM0052,2025,Nord,Mbal\u00e9,F,7,18,Pauvre,21,oui,0,1039\nM0053,2025,Nord,Mbal\u00e9,M,10,49,Acceptable,2,non,1,1061\nM0054,2025,Nord,Mbal\u00e9,M,7,20,Pauvre,14,oui,0,887\nM0055,2025,Nord,Mbal\u00e9,M,6,51,Acceptable,5,non,0,1163\nM0056,2025,Nord,Mbal\u00e9,M,6,15,Pauvre,18,non,0,1280\nM0057,2025,Nord,Tikor,M,6,36,Acceptable,11,oui,0,1385\nM0058,2025,Nord,Tikor,F,4,22,Limite,8,non,0,1008\nM0059,2025,Nord,Tikor,M,11,30,Limite,5,non,0,1342\nM0060,2025,Nord,Tikor,M,7,24,Limite,8,non,0,946\nM0061,2025,Nord,Tikor,M,6,69,Acceptable,4,non,1,909\nM0062,2025,Nord,Tikor,F,5,24,Limite,13,oui,1,1318\nM0063,2025,Nord,Tikor,M,3,30,Limite,10,oui,1,1263\nM0064,2025,Nord,Tikor,M,9,22,Limite,8,non,1,1121\nM0065,2025,Nord,Tikor,M,7,33,Limite,10,non,0,1317\nM0066,2025,Nord,Tikor,M,10,32,Limite,9,oui,1,898\nM0067,2025,Nord,Tikor,M,10,28,Limite,7,non,0,1315\nM0068,2025,Nord,Tikor,F,9,29,Limite,13,oui,0,1420\nM0069,2025,Nord,Tikor,F,8,35,Limite,12,non,1,422\nM0070,2025,Nord,Tikor,F,6,8,Pauvre,14,oui,1,734\nM0071,2025,Nord,Tikor,M,8,66,Acceptable,4,non,0,1206\nM0072,2025,Nord,Tikor,F,7,9,Pauvre,22,non,1,1068\nM0073,2025,Nord,Tikor,F,6,32,Limite,13,oui,0,1262\nM0074,2025,Nord,Tikor,F,3,17,Pauvre,16,non,1,872\nM0075,2025,Nord,Tikor,F,9,30,Limite,11,oui,0,967\nM0076,2025,Nord,Tikor,M,11,19,Pauvre,19,non,1,1266\nM0077,2025,Nord,Tikor,M,8,16,Pauvre,18,oui,0,1260\nM0078,2025,Nord,Tikor,M,9,64,Acceptable,2,non,1,1375\nM0079,2025,Nord,Tikor,F,7,29,Limite,12,oui,2,999\nM0080,2025,Nord,Tikor,M,6,51,Acceptable,11,oui,0,945\nM0081,2025,Nord,Tikor,M,8,34,Limite,13,non,1,1063\nM0082,2025,Nord,Tikor,M,10,33,Limite,12,oui,0,1098\nM0083,2025,Nord,Tikor,F,6,48,Acceptable,4,oui,2,1461\nM0084,2025,Nord,Tikor,F,4,20,Pauvre,16,oui,0,1127\nM0085,2025,Nord,Wandou,F,5,33,Limite,9,oui,0,1376\nM0086,2025,Nord,Wandou,M,10,36,Acceptable,5,non,0,1059\nM0087,2025,Nord,Wandou,F,3,66,Acceptable,7,non,1,938\nM0088,2025,Nord,Wandou,F,9,9,Pauvre,17,non,1,1171\nM0089,2025,Nord,Wandou,M,9,69,Acceptable,1,non,2,1128\nM0090,2025,Nord,Wandou,F,6,33,Limite,15,non,2,1376\nM0091,2025,Nord,Wandou,F,3,40,Acceptable,8,oui,1,1099\nM0092,2025,Nord,Wandou,F,7,15,Pauvre,14,non,1,1231\nM0093,2025,Nord,Wandou,M,5,25,Limite,8,non,1,938\nM0094,2025,Nord,Wandou,F,10,33,Limite,6,oui,1,812\nM0095,2025,Nord,Wandou,F,9,12,Pauvre,13,non,0,1195\nM0096,2025,Nord,Wandou,M,3,50,Acceptable,6,non,2,1117\nM0097,2025,Nord,Wandou,M,7,38,Acceptable,6,non,0,957\nM0098,2025,Nord,Wandou,F,9,29,Limite,11,oui,1,1135\nM0099,2025,Nord,Wandou,F,11,13,Pauvre,14,non,1,1079\nM0100,2025,Nord,Wandou,F,11,43,Acceptable,3,oui,1,1140\nM0101,2025,Nord,Wandou,M,10,15,Pauvre,15,oui,1,979\nM0102,2025,Nord,Wandou,M,4,26,Limite,15,oui,0,1256\nM0103,2025,Nord,Wandou,F,4,19,Pauvre,19,non,1,1099\nM0104,2025,Nord,Wandou,M,7,15,Pauvre,17,oui,1,1113\nM0105,2025,Nord,Wandou,M,5,29,Limite,8,oui,0,1339\nM0106,2025,Nord,Wandou,M,7,14,Pauvre,15,oui,0,1418\nM0107,2025,Nord,Wandou,M,11,67,Acceptable,8,oui,0,989\nM0108,2025,Nord,Wandou,F,9,19,Pauvre,17,non,1,1350\nM0109,2025,Nord,Wandou,F,5,20,Pauvre,10,non,2,1267\nM0110,2025,Nord,Wandou,M,10,31,Limite,7,oui,0,1222\nM0111,2025,Nord,Wandou,F,7,45,Acceptable,2,non,1,1289\nM0112,2025,Nord,Wandou,F,11,35,Limite,14,non,0,1387\nM0113,2025,Centre,Bilom,F,7,21,Pauvre,13,non,0,1176\nM0114,2025,Centre,Bilom,M,4,23,Limite,16,non,1,894\nM0115,2025,Centre,Bilom,M,6,8,Pauvre,17,non,1,1054\nM0116,2025,Centre,Bilom,M,9,10,Pauvre,19,oui,1,1394\nM0117,2025,Centre,Bilom,M,10,10,Pauvre,17,oui,2,940\nM0118,2025,Centre,Bilom,M,7,64,Acceptable,7,non,3,1042\nM0119,2025,Centre,Bilom,M,8,55,Acceptable,7,oui,1,1042\nM0120,2025,Centre,Bilom,M,3,61,Acceptable,6,non,0,1380\nM0121,2025,Centre,Bilom,M,6,12,Pauvre,17,non,0,1191\nM0122,2025,Centre,Bilom,M,4,32,Limite,9,non,0,1061\nM0123,2025,Centre,Bilom,M,8,64,Acceptable,9,non,1,1442\nM0124,2025,Centre,Bilom,M,11,70,Acceptable,11,oui,1,1054\nM0125,2025,Centre,Bilom,M,10,66,Acceptable,8,non,0,1373\nM0126,2025,Centre,Bilom,M,9,21,Pauvre,13,oui,0,909\nM0127,2025,Centre,Bilom,M,7,61,Acceptable,10,non,1,916\nM0128,2025,Centre,Bilom,M,11,9,Pauvre,18,non,0,969\nM0129,2025,Centre,Bilom,F,5,32,Limite,14,non,0,1091\nM0130,2025,Centre,Bilom,F,5,9,Pauvre,20,oui,2,1414\nM0131,2025,Centre,Bilom,M,9,19,Pauvre,20,oui,0,1145\nM0132,2025,Centre,Bilom,M,10,26,Limite,9,non,1,1209\nM0133,2025,Centre,Bilom,M,6,59,Acceptable,0,oui,0,1036\nM0134,2025,Centre,Bilom,M,3,9,Pauvre,19,non,0,930\nM0135,2025,Centre,Bilom,F,6,20,Pauvre,16,oui,0,1162\nM0136,2025,Centre,Bilom,M,5,20,Pauvre,15,oui,1,1166\nM0137,2025,Centre,Bilom,M,6,9,Pauvre,17,oui,0,1467\nM0138,2025,Centre,Bilom,M,4,44,Acceptable,6,oui,0,930\nM0139,2025,Centre,Bilom,M,11,23,Limite,9,non,1,956\nM0140,2025,Centre,Bilom,F,4,66,Acceptable,3,non,1,1019\nM0141,2025,Centre,Ngora,M,8,45,Acceptable,8,oui,1,1022\nM0142,2025,Centre,Ngora,M,4,68,Acceptable,3,oui,0,1099\nM0143,2025,Centre,Ngora,M,10,19,Pauvre,19,non,0,1292\nM0144,2025,Centre,Ngora,M,5,56,Acceptable,4,non,0,1000\nM0145,2025,Centre,Ngora,M,11,41,Acceptable,7,oui,1,1151\nM0146,2025,Centre,Ngora,F,9,32,Limite,6,non,1,1291\nM0147,2025,Centre,Ngora,M,10,17,Pauvre,16,non,1,1070\nM0148,2025,Centre,Ngora,F,6,13,Pauvre,17,oui,1,1270\nM0149,2025,Centre,Ngora,M,7,21,Pauvre,14,non,0,919\nM0150,2025,Centre,Ngora,F,5,13,Pauvre,16,oui,0,1242\nM0151,2025,Centre,Ngora,M,5,37,Acceptable,9,oui,1,1033\nM0152,2025,Centre,Ngora,F,5,17,Pauvre,19,non,0,938\nM0153,2025,Centre,Ngora,F,6,26,Limite,8,non,1,1028\nM0154,2025,Centre,Ngora,M,11,54,Acceptable,4,oui,0,933\nM0155,2025,Centre,Ngora,M,7,39,Acceptable,9,oui,1,1198\nM0156,2025,Centre,Ngora,F,6,28,Limite,13,oui,1,1331\nM0157,2025,Centre,Ngora,M,4,9,Pauvre,13,non,1,990\nM0158,2025,Centre,Ngora,M,9,33,Limite,12,oui,0,1035\nM0159,2025,Centre,Ngora,F,4,17,Pauvre,13,oui,1,1049\nM0160,2025,Centre,Ngora,F,6,28,Limite,13,oui,2,982\nM0161,2025,Centre,Ngora,F,5,23,Limite,9,oui,0,1177\nM0162,2025,Centre,Ngora,F,5,45,Acceptable,3,oui,1,912\nM0163,2025,Centre,Ngora,M,8,31,Limite,11,non,0,1356\nM0164,2025,Centre,Ngora,M,7,40,Acceptable,4,non,0,1199\nM0165,2025,Centre,Ngora,M,4,65,Acceptable,5,oui,1,1209\nM0166,2025,Centre,Ngora,M,3,30,Limite,10,oui,2,1114\nM0167,2025,Centre,Ngora,M,8,27,Limite,8,non,0,1340\nM0168,2025,Centre,Ngora,M,10,22,Limite,10,oui,1,1367\nM0169,2025,Centre,Sanda,M,8,14,Pauvre,15,oui,1,915\nM0170,2025,Centre,Sanda,F,5,26,Limite,8,oui,0,1502\nM0171,2025,Centre,Sanda,F,4,58,Acceptable,4,oui,2,1148\nM0172,2025,Centre,Sanda,F,11,21,Pauvre,16,oui,1,1376\nM0173,2025,Centre,Sanda,F,10,22,Limite,10,non,1,1272\nM0174,2025,Centre,Sanda,F,11,54,Acceptable,13,non,1,1105\nM0175,2025,Centre,Sanda,M,5,57,Acceptable,9,non,0,1065\nM0176,2025,Centre,Sanda,M,8,10,Pauvre,16,non,0,1097\nM0177,2025,Centre,Sanda,M,10,54,Acceptable,6,oui,0,1163\nM0178,2025,Centre,Sanda,M,7,31,Limite,13,oui,1,1154\nM0179,2025,Centre,Sanda,M,10,46,Acceptable,8,oui,0,1238\nM0180,2025,Centre,Sanda,M,5,69,Acceptable,8,oui,1,1055\nM0181,2025,Centre,Sanda,F,3,63,Acceptable,12,non,2,1350\nM0182,2025,Centre,Sanda,M,3,60,Acceptable,0,oui,1,1168\nM0183,2025,Centre,Sanda,F,5,27,Limite,11,oui,0,1072\nM0184,2025,Centre,Sanda,M,5,23,Limite,16,oui,1,1189\nM0185,2025,Centre,Sanda,M,10,23,Limite,11,non,0,1246\nM0186,2025,Centre,Sanda,F,6,30,Limite,13,non,2,1220\nM0187,2025,Centre,Sanda,M,8,58,Acceptable,6,oui,1,1135\nM0188,2025,Centre,Sanda,F,10,30,Limite,10,oui,0,1090\nM0189,2025,Centre,Sanda,F,4,37,Acceptable,5,oui,1,1189\nM0190,2025,Centre,Sanda,M,5,38,Acceptable,10,non,0,1281\nM0191,2025,Centre,Sanda,M,10,15,Pauvre,13,non,0,1437\nM0192,2025,Centre,Sanda,F,9,8,Pauvre,19,oui,0,1292\nM0193,2025,Centre,Sanda,M,7,48,Acceptable,5,oui,2,1449\nM0194,2025,Centre,Sanda,F,8,19,Pauvre,18,oui,0,1317\nM0195,2025,Centre,Sanda,M,5,34,Limite,6,oui,0,1140\nM0196,2025,Centre,Sanda,M,9,54,Acceptable,5,oui,0,1379\nM0197,2025,Centre,Eb\u00e9ni,M,3,27,Limite,9,oui,0,946\nM0198,2025,Centre,Eb\u00e9ni,F,3,34,Limite,7,non,0,1044\nM0199,2025,Centre,Eb\u00e9ni,F,3,8,Pauvre,19,non,1,1070\nM0200,2025,Centre,Eb\u00e9ni,M,5,13,Pauvre,15,non,0,1175\nM0201,2025,Centre,Eb\u00e9ni,M,11,25,Limite,12,oui,0,1235\nM0202,2025,Centre,Eb\u00e9ni,F,10,11,Pauvre,20,non,1,1171\nM0203,2025,Centre,Eb\u00e9ni,F,8,47,Acceptable,9,oui,0,1382\nM0204,2025,Centre,Eb\u00e9ni,M,5,26,Limite,13,non,2,976\nM0205,2025,Centre,Eb\u00e9ni,M,8,48,Acceptable,7,oui,0,980\nM0206,2025,Centre,Eb\u00e9ni,M,10,41,Acceptable,6,non,1,1247\nM0207,2025,Centre,Eb\u00e9ni,M,11,9,Pauvre,19,non,1,1354\nM0208,2025,Centre,Eb\u00e9ni,F,5,18,Pauvre,19,non,0,989\nM0209,2025,Centre,Eb\u00e9ni,M,6,43,Acceptable,3,non,0,1371\nM0210,2025,Centre,Eb\u00e9ni,F,11,21,Pauvre,23,non,1,1231\nM0211,2025,Centre,Eb\u00e9ni,F,8,23,Limite,9,non,0,1247\nM0212,2025,Centre,Eb\u00e9ni,M,7,8,Pauvre,16,oui,2,1412\nM0213,2025,Centre,Eb\u00e9ni,M,7,32,Limite,17,non,1,927\nM0214,2025,Centre,Eb\u00e9ni,M,5,26,Limite,10,non,0,1229\nM0215,2025,Centre,Eb\u00e9ni,M,9,45,Acceptable,4,oui,2,1163\nM0216,2025,Centre,Eb\u00e9ni,F,10,27,Limite,5,oui,1,1266\nM0217,2025,Centre,Eb\u00e9ni,F,8,60,Acceptable,8,oui,0,1528\nM0218,2025,Centre,Eb\u00e9ni,M,10,46,Acceptable,4,non,0,1152\nM0219,2025,Centre,Eb\u00e9ni,M,3,61,Acceptable,0,oui,0,1186\nM0220,2025,Centre,Eb\u00e9ni,F,4,18,Pauvre,20,oui,0,1191\nM0221,2025,Centre,Eb\u00e9ni,M,8,34,Limite,10,non,1,1393\nM0222,2025,Centre,Eb\u00e9ni,M,4,34,Limite,12,oui,0,1046\nM0223,2025,Centre,Eb\u00e9ni,F,9,27,Limite,8,oui,0,1301\nM0224,2025,Centre,Eb\u00e9ni,M,5,57,Acceptable,9,oui,1,969\nM0225,2025,Est,Lessa,M,11,24,Limite,8,oui,1,1307\nM0226,2025,Est,Lessa,M,8,26,Limite,8,oui,0,1155\nM0227,2025,Est,Lessa,M,7,34,Limite,16,non,0,983\nM0228,2025,Est,Lessa,M,10,17,Pauvre,14,non,1,1232\nM0229,2025,Est,Lessa,F,4,35,Limite,7,non,2,1210\nM0230,2025,Est,Lessa,F,10,28,Limite,15,oui,0,978\nM0231,2025,Est,Lessa,M,9,44,Acceptable,2,non,0,1355\nM0232,2025,Est,Lessa,F,7,13,Pauvre,17,oui,0,1073\nM0233,2025,Est,Lessa,M,6,55,Acceptable,7,oui,3,1178\nM0234,2025,Est,Lessa,M,7,30,Limite,13,oui,2,1068\nM0235,2025,Est,Lessa,F,7,28,Limite,14,oui,0,1200\nM0236,2025,Est,Lessa,M,6,18,Pauvre,15,oui,0,1355\nM0237,2025,Est,Lessa,M,11,26,Limite,14,oui,1,1059\nM0238,2025,Est,Lessa,F,5,57,Acceptable,5,oui,0,1069\nM0239,2025,Est,Lessa,F,7,14,Pauvre,13,oui,0,892\nM0240,2025,Est,Lessa,F,3,9,Pauvre,18,non,0,1043\nM0241,2025,Est,Lessa,M,5,10,Pauvre,18,oui,0,1313\nM0242,2025,Est,Lessa,M,4,8,Pauvre,12,non,2,1212\nM0243,2025,Est,Lessa,M,10,32,Limite,8,oui,0,1475\nM0244,2025,Est,Lessa,F,5,33,Limite,9,non,0,1185\nM0245,2025,Est,Lessa,F,11,48,Acceptable,9,oui,2,1467\nM0246,2025,Est,Lessa,F,3,44,Acceptable,3,oui,0,1210\nM0247,2025,Est,Lessa,F,6,13,Pauvre,15,oui,2,1459\nM0248,2025,Est,Lessa,F,7,61,Acceptable,6,oui,0,775\nM0249,2025,Est,Lessa,M,8,13,Pauvre,15,non,0,1219\nM0250,2025,Est,Lessa,M,6,30,Limite,12,oui,1,855\nM0251,2025,Est,Lessa,M,3,16,Pauvre,13,oui,1,1379\nM0252,2025,Est,Lessa,M,11,70,Acceptable,8,non,1,1304\nM0253,2025,Est,Ndjolo,M,3,30,Limite,10,non,1,1300\nM0254,2025,Est,Ndjolo,M,6,37,Acceptable,8,non,0,1352\nM0255,2025,Est,Ndjolo,M,10,40,Acceptable,5,oui,0,1564\nM0256,2025,Est,Ndjolo,F,9,20,Pauvre,12,oui,0,924\nM0257,2025,Est,Ndjolo,F,8,28,Limite,8,non,1,1056\nM0258,2025,Est,Ndjolo,F,3,24,Limite,8,non,0,1023\nM0259,2025,Est,Ndjolo,M,8,33,Limite,7,non,0,1210\nM0260,2025,Est,Ndjolo,F,9,20,Pauvre,15,oui,2,1411\nM0261,2025,Est,Ndjolo,M,3,11,Pauvre,17,non,1,1412\nM0262,2025,Est,Ndjolo,F,3,30,Limite,12,oui,1,1526\nM0263,2025,Est,Ndjolo,F,5,56,Acceptable,1,non,0,1205\nM0264,2025,Est,Ndjolo,M,5,26,Limite,9,oui,3,1386\nM0265,2025,Est,Ndjolo,M,9,27,Limite,15,oui,0,1185\nM0266,2025,Est,Ndjolo,M,7,70,Acceptable,3,oui,0,1208\nM0267,2025,Est,Ndjolo,M,6,22,Limite,4,oui,0,1060\nM0268,2025,Est,Ndjolo,F,6,64,Acceptable,5,oui,1,1109\nM0269,2025,Est,Ndjolo,F,11,22,Limite,12,oui,0,1171\nM0270,2025,Est,Ndjolo,F,6,12,Pauvre,12,oui,1,1166\nM0271,2025,Est,Ndjolo,M,6,15,Pauvre,21,oui,0,1098\nM0272,2025,Est,Ndjolo,M,8,30,Limite,8,non,0,1026\nM0273,2025,Est,Ndjolo,M,3,66,Acceptable,6,oui,0,1195\nM0274,2025,Est,Ndjolo,M,9,52,Acceptable,8,oui,0,1072\nM0275,2025,Est,Ndjolo,F,10,51,Acceptable,2,oui,1,1119\nM0276,2025,Est,Ndjolo,M,5,24,Limite,9,non,0,983\nM0277,2025,Est,Ndjolo,M,4,16,Pauvre,25,oui,0,810\nM0278,2025,Est,Ndjolo,M,4,14,Pauvre,16,non,1,1367\nM0279,2025,Est,Ndjolo,M,10,27,Limite,15,oui,1,1538\nM0280,2025,Est,Ndjolo,F,7,22,Limite,8,oui,0,1123\nM0281,2025,Est,Mb\u00e9ti,M,11,10,Pauvre,18,non,1,1244\nM0282,2025,Est,Mb\u00e9ti,F,6,9,Pauvre,19,oui,0,1281\nM0283,2025,Est,Mb\u00e9ti,M,9,35,Limite,19,oui,2,1171\nM0284,2025,Est,Mb\u00e9ti,F,9,36,Acceptable,5,oui,0,1078\nM0285,2025,Est,Mb\u00e9ti,M,10,9,Pauvre,22,oui,0,1199\nM0286,2025,Est,Mb\u00e9ti,F,3,12,Pauvre,23,non,1,1037\nM0287,2025,Est,Mb\u00e9ti,F,4,49,Acceptable,2,non,0,1108\nM0288,2025,Est,Mb\u00e9ti,F,8,35,Limite,8,oui,0,1396\nM0289,2025,Est,Mb\u00e9ti,M,9,19,Pauvre,16,non,0,1209\nM0290,2025,Est,Mb\u00e9ti,F,8,31,Limite,11,oui,1,1123\nM0291,2025,Est,Mb\u00e9ti,F,9,15,Pauvre,18,oui,2,1116\nM0292,2025,Est,Mb\u00e9ti,F,9,19,Pauvre,18,non,1,1237\nM0293,2025,Est,Mb\u00e9ti,M,7,13,Pauvre,16,non,1,1357\nM0294,2025,Est,Mb\u00e9ti,F,3,30,Limite,10,oui,0,1088\nM0295,2025,Est,Mb\u00e9ti,F,4,34,Limite,10,oui,1,1128\nM0296,2025,Est,Mb\u00e9ti,M,9,11,Pauvre,20,oui,0,1102\nM0297,2025,Est,Mb\u00e9ti,F,4,24,Limite,14,oui,1,992\nM0298,2025,Est,Mb\u00e9ti,F,4,15,Pauvre,19,non,0,1084\nM0299,2025,Est,Mb\u00e9ti,F,5,35,Limite,7,oui,0,1072\nM0300,2025,Est,Mb\u00e9ti,F,8,15,Pauvre,19,non,0,1578\nM0301,2025,Est,Mb\u00e9ti,F,8,31,Limite,12,non,0,1090\nM0302,2025,Est,Mb\u00e9ti,F,3,30,Limite,16,oui,1,1452\nM0303,2025,Est,Mb\u00e9ti,M,9,15,Pauvre,19,oui,0,1467\nM0304,2025,Est,Mb\u00e9ti,M,9,26,Limite,13,oui,0,910\nM0305,2025,Est,Mb\u00e9ti,F,3,28,Limite,4,non,0,1278\nM0306,2025,Est,Mb\u00e9ti,M,4,16,Pauvre,15,oui,0,928\nM0307,2025,Est,Mb\u00e9ti,M,8,32,Limite,8,non,0,991\nM0308,2025,Est,Mb\u00e9ti,M,11,52,Acceptable,3,oui,1,1468\nM0309,2025,Est,K\u00e9ra,M,4,68,Acceptable,12,oui,3,1072\nM0310,2025,Est,K\u00e9ra,F,11,55,Acceptable,6,non,0,1413\nM0311,2025,Est,K\u00e9ra,M,3,33,Limite,10,oui,1,1446\nM0312,2025,Est,K\u00e9ra,M,11,24,Limite,12,non,2,1072\nM0313,2025,Est,K\u00e9ra,F,9,29,Limite,11,oui,1,1277\nM0314,2025,Est,K\u00e9ra,M,6,15,Pauvre,21,non,0,1052\nM0315,2025,Est,K\u00e9ra,F,6,9,Pauvre,12,non,0,983\nM0316,2025,Est,K\u00e9ra,M,9,16,Pauvre,16,oui,1,1141\nM0317,2025,Est,K\u00e9ra,M,4,65,Acceptable,2,oui,0,1109\nM0318,2025,Est,K\u00e9ra,M,11,43,Acceptable,4,oui,1,1427\nM0319,2025,Est,K\u00e9ra,M,5,28,Limite,13,oui,2,1108\nM0320,2025,Est,K\u00e9ra,M,8,56,Acceptable,2,oui,1,964\nM0321,2025,Est,K\u00e9ra,M,9,60,Acceptable,9,oui,0,877\nM0322,2025,Est,K\u00e9ra,M,3,37,Acceptable,6,oui,1,1052\nM0323,2025,Est,K\u00e9ra,F,4,65,Acceptable,1,oui,0,935\nM0324,2025,Est,K\u00e9ra,F,10,16,Pauvre,17,oui,1,1127\nM0325,2025,Est,K\u00e9ra,M,4,51,Acceptable,3,non,4,1088\nM0326,2025,Est,K\u00e9ra,M,8,11,Pauvre,18,non,1,1459\nM0327,2025,Est,K\u00e9ra,M,8,31,Limite,12,non,1,1191\nM0328,2025,Est,K\u00e9ra,M,11,54,Acceptable,7,oui,0,1288\nM0329,2025,Est,K\u00e9ra,M,5,62,Acceptable,14,non,0,1213\nM0330,2025,Est,K\u00e9ra,F,5,20,Pauvre,16,non,1,1024\nM0331,2025,Est,K\u00e9ra,M,7,29,Limite,16,oui,1,1196\nM0332,2025,Est,K\u00e9ra,M,4,29,Limite,8,non,0,1161\nM0333,2025,Est,K\u00e9ra,M,6,27,Limite,14,oui,0,772\nM0334,2025,Est,K\u00e9ra,M,8,44,Acceptable,11,oui,0,1066\nM0335,2025,Est,K\u00e9ra,M,9,65,Acceptable,13,non,1,1283\nM0336,2025,Est,K\u00e9ra,F,7,55,Acceptable,9,non,2,1550\nM0337,2026,Nord,Darka,F,6,32,Limite,13,oui,3,1407\nM0338,2026,Nord,Darka,M,6,49,Acceptable,10,oui,2,1492\nM0339,2026,Nord,Darka,M,4,57,Acceptable,10,oui,0,1345\nM0340,2026,Nord,Darka,F,5,9,Pauvre,18,oui,1,1796\nM0341,2026,Nord,Darka,M,5,18,Pauvre,19,non,0,1127\nM0342,2026,Nord,Darka,M,10,24,Limite,11,non,2,1078\nM0343,2026,Nord,Darka,M,5,43,Acceptable,4,oui,2,1630\nM0344,2026,Nord,Darka,F,3,31,Limite,10,non,0,1005\nM0345,2026,Nord,Darka,M,6,30,Limite,9,non,0,948\nM0346,2026,Nord,Darka,M,3,31,Limite,14,oui,4,1689\nM0347,2026,Nord,Darka,M,4,62,Acceptable,3,non,2,1234\nM0348,2026,Nord,Darka,F,9,38,Acceptable,0,oui,4,1321\nM0349,2026,Nord,Darka,M,5,28,Limite,8,non,1,1032\nM0350,2026,Nord,Darka,F,8,25,Limite,8,oui,3,1485\nM0351,2026,Nord,Darka,M,6,18,Pauvre,15,non,0,738\nM0352,2026,Nord,Darka,F,5,29,Limite,14,oui,2,1439\nM0353,2026,Nord,Darka,F,7,10,Pauvre,14,non,1,841\nM0354,2026,Nord,Darka,F,3,12,Pauvre,16,oui,2,1388\nM0355,2026,Nord,Darka,F,8,26,Limite,10,oui,1,1630\nM0356,2026,Nord,Darka,F,4,46,Acceptable,8,non,0,1234\nM0357,2026,Nord,Darka,F,3,36,Acceptable,6,oui,3,1426\nM0358,2026,Nord,Darka,M,8,14,Pauvre,18,non,1,1308\nM0359,2026,Nord,Darka,F,3,30,Limite,11,oui,2,1514\nM0360,2026,Nord,Darka,M,4,26,Limite,15,oui,2,1324\nM0361,2026,Nord,Darka,M,6,55,Acceptable,6,oui,1,1129\nM0362,2026,Nord,Darka,M,6,10,Pauvre,23,oui,3,1509\nM0363,2026,Nord,Darka,M,7,8,Pauvre,17,non,0,957\nM0364,2026,Nord,Darka,F,5,67,Acceptable,1,oui,4,1409\nM0365,2026,Nord,Mbal\u00e9,F,4,16,Pauvre,12,non,1,885\nM0366,2026,Nord,Mbal\u00e9,M,5,31,Limite,12,non,0,1070\nM0367,2026,Nord,Mbal\u00e9,F,4,61,Acceptable,5,oui,1,1395\nM0368,2026,Nord,Mbal\u00e9,M,10,23,Limite,13,oui,2,1567\nM0369,2026,Nord,Mbal\u00e9,F,7,49,Acceptable,3,oui,2,1525\nM0370,2026,Nord,Mbal\u00e9,M,8,56,Acceptable,5,non,1,1402\nM0371,2026,Nord,Mbal\u00e9,M,6,47,Acceptable,9,oui,2,1192\nM0372,2026,Nord,Mbal\u00e9,F,6,9,Pauvre,18,oui,4,1551\nM0373,2026,Nord,Mbal\u00e9,F,4,32,Limite,12,non,0,805\nM0374,2026,Nord,Mbal\u00e9,F,8,15,Pauvre,14,oui,2,1404\nM0375,2026,Nord,Mbal\u00e9,F,5,63,Acceptable,7,non,0,1418\nM0376,2026,Nord,Mbal\u00e9,F,6,64,Acceptable,7,non,1,1142\nM0377,2026,Nord,Mbal\u00e9,M,11,15,Pauvre,19,oui,2,1556\nM0378,2026,Nord,Mbal\u00e9,F,8,22,Limite,13,non,2,1177\nM0379,2026,Nord,Mbal\u00e9,M,3,68,Acceptable,5,non,1,1413\nM0380,2026,Nord,Mbal\u00e9,M,6,66,Acceptable,7,non,0,1094\nM0381,2026,Nord,Mbal\u00e9,M,6,26,Limite,6,oui,2,1453\nM0382,2026,Nord,Mbal\u00e9,M,6,35,Limite,6,non,1,1168\nM0383,2026,Nord,Mbal\u00e9,M,6,31,Limite,16,non,1,1393\nM0384,2026,Nord,Mbal\u00e9,M,4,16,Pauvre,16,non,0,1345\nM0385,2026,Nord,Mbal\u00e9,F,5,66,Acceptable,13,non,1,1203\nM0386,2026,Nord,Mbal\u00e9,M,5,37,Acceptable,8,non,1,1399\nM0387,2026,Nord,Mbal\u00e9,M,7,9,Pauvre,12,non,2,1132\nM0388,2026,Nord,Mbal\u00e9,F,8,14,Pauvre,18,non,1,732\nM0389,2026,Nord,Mbal\u00e9,F,7,17,Pauvre,17,non,0,1055\nM0390,2026,Nord,Mbal\u00e9,M,9,36,Acceptable,5,oui,4,1387\nM0391,2026,Nord,Mbal\u00e9,M,4,24,Limite,6,non,0,1275\nM0392,2026,Nord,Mbal\u00e9,M,4,25,Limite,11,oui,2,1608\nM0393,2026,Nord,Tikor,M,4,36,Acceptable,6,non,1,1300\nM0394,2026,Nord,Tikor,M,10,62,Acceptable,7,oui,4,1454\nM0395,2026,Nord,Tikor,M,10,66,Acceptable,7,oui,1,1461\nM0396,2026,Nord,Tikor,F,8,56,Acceptable,4,non,0,1234\nM0397,2026,Nord,Tikor,F,10,30,Limite,19,oui,1,1180\nM0398,2026,Nord,Tikor,M,4,31,Limite,18,oui,3,1435\nM0399,2026,Nord,Tikor,F,6,30,Limite,10,non,0,1136\nM0400,2026,Nord,Tikor,F,9,29,Limite,13,oui,3,1642\nM0401,2026,Nord,Tikor,F,4,29,Limite,11,non,1,1245\nM0402,2026,Nord,Tikor,M,4,15,Pauvre,19,oui,1,1472\nM0403,2026,Nord,Tikor,M,6,60,Acceptable,4,oui,3,1485\nM0404,2026,Nord,Tikor,M,11,42,Acceptable,9,oui,3,1587\nM0405,2026,Nord,Tikor,M,10,39,Acceptable,9,non,0,956\nM0406,2026,Nord,Tikor,M,11,61,Acceptable,8,oui,3,1339\nM0407,2026,Nord,Tikor,M,5,31,Limite,15,oui,4,1109\nM0408,2026,Nord,Tikor,M,6,63,Acceptable,8,non,2,1327\nM0409,2026,Nord,Tikor,M,11,12,Pauvre,15,non,2,1225\nM0410,2026,Nord,Tikor,M,11,65,Acceptable,5,oui,2,1464\nM0411,2026,Nord,Tikor,M,11,42,Acceptable,9,oui,2,1597\nM0412,2026,Nord,Tikor,M,5,67,Acceptable,7,non,0,1061\nM0413,2026,Nord,Tikor,F,3,33,Limite,9,oui,3,1702\nM0414,2026,Nord,Tikor,M,7,8,Pauvre,14,non,0,1422\nM0415,2026,Nord,Tikor,F,8,23,Limite,13,oui,2,1385\nM0416,2026,Nord,Tikor,F,9,25,Limite,16,oui,0,1573\nM0417,2026,Nord,Tikor,M,9,21,Pauvre,22,non,1,1433\nM0418,2026,Nord,Tikor,F,6,8,Pauvre,19,non,1,1500\nM0419,2026,Nord,Tikor,M,4,59,Acceptable,5,oui,1,1549\nM0420,2026,Nord,Tikor,M,11,64,Acceptable,3,oui,3,1829\nM0421,2026,Nord,Wandou,F,6,19,Pauvre,18,non,1,1510\nM0422,2026,Nord,Wandou,M,3,26,Limite,13,non,0,974\nM0423,2026,Nord,Wandou,M,7,36,Acceptable,7,oui,3,1768\nM0424,2026,Nord,Wandou,M,11,52,Acceptable,4,oui,2,1628\nM0425,2026,Nord,Wandou,M,7,68,Acceptable,14,oui,2,1601\nM0426,2026,Nord,Wandou,F,7,53,Acceptable,3,oui,1,1177\nM0427,2026,Nord,Wandou,M,9,25,Limite,14,non,2,1461\nM0428,2026,Nord,Wandou,M,9,18,Pauvre,14,non,0,1152\nM0429,2026,Nord,Wandou,M,10,31,Limite,12,non,0,1087\nM0430,2026,Nord,Wandou,M,11,35,Limite,7,non,1,1405\nM0431,2026,Nord,Wandou,F,8,52,Acceptable,5,oui,1,1826\nM0432,2026,Nord,Wandou,M,8,55,Acceptable,2,oui,0,1610\nM0433,2026,Nord,Wandou,F,10,15,Pauvre,21,oui,3,1283\nM0434,2026,Nord,Wandou,M,5,14,Pauvre,15,oui,1,1419\nM0435,2026,Nord,Wandou,F,5,31,Limite,18,oui,0,1653\nM0436,2026,Nord,Wandou,M,10,24,Limite,16,oui,2,1535\nM0437,2026,Nord,Wandou,F,9,46,Acceptable,1,non,1,1385\nM0438,2026,Nord,Wandou,M,3,22,Limite,13,non,0,1089\nM0439,2026,Nord,Wandou,M,8,22,Limite,9,non,0,1152\nM0440,2026,Nord,Wandou,F,7,26,Limite,16,oui,3,1793\nM0441,2026,Nord,Wandou,M,10,30,Limite,8,oui,4,1691\nM0442,2026,Nord,Wandou,F,5,20,Pauvre,17,oui,2,1552\nM0443,2026,Nord,Wandou,F,7,23,Limite,8,oui,3,1860\nM0444,2026,Nord,Wandou,M,3,22,Limite,12,non,0,927\nM0445,2026,Nord,Wandou,F,3,23,Limite,8,oui,2,1637\nM0446,2026,Nord,Wandou,F,9,12,Pauvre,21,non,0,955\nM0447,2026,Nord,Wandou,M,7,23,Limite,10,oui,4,1279\nM0448,2026,Nord,Wandou,M,10,28,Limite,11,non,0,1199\nM0449,2026,Centre,Bilom,M,5,36,Acceptable,3,oui,0,1567\nM0450,2026,Centre,Bilom,M,10,42,Acceptable,2,non,2,1052\nM0451,2026,Centre,Bilom,M,8,42,Acceptable,8,oui,0,1532\nM0452,2026,Centre,Bilom,M,5,22,Limite,9,oui,3,1508\nM0453,2026,Centre,Bilom,F,9,12,Pauvre,18,non,0,1195\nM0454,2026,Centre,Bilom,M,5,33,Limite,9,oui,3,1242\nM0455,2026,Centre,Bilom,F,10,46,Acceptable,11,non,2,966\nM0456,2026,Centre,Bilom,F,5,37,Acceptable,6,oui,3,1220\nM0457,2026,Centre,Bilom,M,11,15,Pauvre,19,oui,2,1368\nM0458,2026,Centre,Bilom,M,4,57,Acceptable,10,oui,1,1421\nM0459,2026,Centre,Bilom,M,3,60,Acceptable,9,non,2,1391\nM0460,2026,Centre,Bilom,M,10,35,Limite,8,oui,2,1481\nM0461,2026,Centre,Bilom,F,10,68,Acceptable,7,oui,3,1394\nM0462,2026,Centre,Bilom,M,10,67,Acceptable,7,oui,2,1508\nM0463,2026,Centre,Bilom,M,7,38,Acceptable,6,oui,2,1684\nM0464,2026,Centre,Bilom,M,3,65,Acceptable,8,oui,3,1450\nM0465,2026,Centre,Bilom,M,6,66,Acceptable,5,non,0,1072\nM0466,2026,Centre,Bilom,F,4,34,Limite,11,oui,2,1689\nM0467,2026,Centre,Bilom,F,9,62,Acceptable,9,oui,3,1661\nM0468,2026,Centre,Bilom,F,4,57,Acceptable,12,non,1,1291\nM0469,2026,Centre,Bilom,M,9,68,Acceptable,8,oui,3,1446\nM0470,2026,Centre,Bilom,M,5,47,Acceptable,6,oui,2,1374\nM0471,2026,Centre,Bilom,F,6,27,Limite,8,non,0,1547\nM0472,2026,Centre,Bilom,F,11,15,Pauvre,16,non,1,1082\nM0473,2026,Centre,Bilom,F,7,19,Pauvre,17,non,0,1175\nM0474,2026,Centre,Bilom,M,8,47,Acceptable,8,non,0,1143\nM0475,2026,Centre,Bilom,M,11,31,Limite,7,non,0,890\nM0476,2026,Centre,Bilom,F,3,16,Pauvre,19,non,1,1283\nM0477,2026,Centre,Ngora,F,6,54,Acceptable,5,non,0,1442\nM0478,2026,Centre,Ngora,M,11,23,Limite,13,oui,1,1274\nM0479,2026,Centre,Ngora,M,3,25,Limite,6,non,0,1058\nM0480,2026,Centre,Ngora,M,3,18,Pauvre,13,oui,2,1689\nM0481,2026,Centre,Ngora,M,8,21,Pauvre,21,oui,1,1693\nM0482,2026,Centre,Ngora,M,4,48,Acceptable,4,oui,2,1586\nM0483,2026,Centre,Ngora,F,7,60,Acceptable,8,oui,2,1468\nM0484,2026,Centre,Ngora,F,3,8,Pauvre,19,oui,3,1633\nM0485,2026,Centre,Ngora,M,8,12,Pauvre,13,non,1,976\nM0486,2026,Centre,Ngora,M,11,34,Limite,15,non,0,1144\nM0487,2026,Centre,Ngora,M,11,18,Pauvre,16,oui,3,1561\nM0488,2026,Centre,Ngora,M,10,32,Limite,16,oui,3,1517\nM0489,2026,Centre,Ngora,F,4,11,Pauvre,21,non,0,977\nM0490,2026,Centre,Ngora,M,11,69,Acceptable,12,oui,2,1321\nM0491,2026,Centre,Ngora,M,11,11,Pauvre,16,oui,2,1874\nM0492,2026,Centre,Ngora,M,4,49,Acceptable,11,non,1,1032\nM0493,2026,Centre,Ngora,F,5,19,Pauvre,18,non,0,1427\nM0494,2026,Centre,Ngora,F,11,40,Acceptable,4,non,2,1305\nM0495,2026,Centre,Ngora,F,4,14,Pauvre,14,non,1,1144\nM0496,2026,Centre,Ngora,M,4,34,Limite,11,non,0,1095\nM0497,2026,Centre,Ngora,F,3,55,Acceptable,4,oui,2,1636\nM0498,2026,Centre,Ngora,M,7,61,Acceptable,5,oui,3,1167\nM0499,2026,Centre,Ngora,M,11,34,Limite,14,oui,1,1480\nM0500,2026,Centre,Ngora,F,7,61,Acceptable,6,oui,0,1329\nM0501,2026,Centre,Ngora,F,6,25,Limite,7,non,1,1068\nM0502,2026,Centre,Ngora,M,11,39,Acceptable,6,oui,3,1166\nM0503,2026,Centre,Ngora,M,8,40,Acceptable,6,oui,3,1115\nM0504,2026,Centre,Ngora,F,10,40,Acceptable,2,non,1,1082\nM0505,2026,Centre,Sanda,M,6,59,Acceptable,9,non,0,1226\nM0506,2026,Centre,Sanda,M,10,59,Acceptable,8,non,1,1393\nM0507,2026,Centre,Sanda,M,5,42,Acceptable,8,oui,3,1696\nM0508,2026,Centre,Sanda,M,3,32,Limite,6,oui,2,1511\nM0509,2026,Centre,Sanda,M,11,17,Pauvre,14,non,1,1364\nM0510,2026,Centre,Sanda,M,7,24,Limite,9,oui,2,1574\nM0511,2026,Centre,Sanda,F,5,59,Acceptable,2,oui,2,1666\nM0512,2026,Centre,Sanda,M,8,45,Acceptable,2,oui,2,1272\nM0513,2026,Centre,Sanda,F,8,52,Acceptable,5,non,1,1279\nM0514,2026,Centre,Sanda,M,11,8,Pauvre,23,non,1,1155\nM0515,2026,Centre,Sanda,M,4,31,Limite,9,oui,2,1380\nM0516,2026,Centre,Sanda,M,8,16,Pauvre,15,oui,1,1639\nM0517,2026,Centre,Sanda,M,7,30,Limite,13,oui,1,1481\nM0518,2026,Centre,Sanda,F,8,43,Acceptable,10,oui,2,1320\nM0519,2026,Centre,Sanda,M,5,49,Acceptable,2,oui,1,1340\nM0520,2026,Centre,Sanda,M,5,22,Limite,12,oui,2,1414\nM0521,2026,Centre,Sanda,F,7,17,Pauvre,21,oui,2,1688\nM0522,2026,Centre,Sanda,M,9,29,Limite,8,oui,2,1396\nM0523,2026,Centre,Sanda,M,10,10,Pauvre,14,non,0,1285\nM0524,2026,Centre,Sanda,M,11,44,Acceptable,10,oui,3,1578\nM0525,2026,Centre,Sanda,M,11,24,Limite,7,non,1,1480\nM0526,2026,Centre,Sanda,M,9,31,Limite,12,oui,2,1476\nM0527,2026,Centre,Sanda,M,8,69,Acceptable,0,oui,3,1196\nM0528,2026,Centre,Sanda,M,7,19,Pauvre,18,non,0,1063\nM0529,2026,Centre,Sanda,M,3,12,Pauvre,14,oui,1,1453\nM0530,2026,Centre,Sanda,M,8,49,Acceptable,6,oui,2,1333\nM0531,2026,Centre,Sanda,F,9,26,Limite,13,oui,1,1358\nM0532,2026,Centre,Sanda,M,10,29,Limite,13,oui,3,1710\nM0533,2026,Centre,Eb\u00e9ni,F,5,33,Limite,15,oui,3,1597\nM0534,2026,Centre,Eb\u00e9ni,F,3,20,Pauvre,18,oui,1,1367\nM0535,2026,Centre,Eb\u00e9ni,F,7,41,Acceptable,8,non,0,1088\nM0536,2026,Centre,Eb\u00e9ni,F,11,60,Acceptable,5,oui,3,1425\nM0537,2026,Centre,Eb\u00e9ni,F,11,47,Acceptable,4,non,0,1229\nM0538,2026,Centre,Eb\u00e9ni,F,3,30,Limite,15,oui,2,1242\nM0539,2026,Centre,Eb\u00e9ni,F,6,9,Pauvre,22,non,0,1041\nM0540,2026,Centre,Eb\u00e9ni,M,11,41,Acceptable,8,non,0,1061\nM0541,2026,Centre,Eb\u00e9ni,M,3,12,Pauvre,18,oui,4,1350\nM0542,2026,Centre,Eb\u00e9ni,F,4,40,Acceptable,7,oui,1,1451\nM0543,2026,Centre,Eb\u00e9ni,M,10,21,Pauvre,18,non,0,986\nM0544,2026,Centre,Eb\u00e9ni,M,3,15,Pauvre,18,non,0,801\nM0545,2026,Centre,Eb\u00e9ni,M,11,50,Acceptable,5,oui,2,1298\nM0546,2026,Centre,Eb\u00e9ni,M,8,54,Acceptable,13,non,2,1347\nM0547,2026,Centre,Eb\u00e9ni,F,6,27,Limite,12,non,2,1320\nM0548,2026,Centre,Eb\u00e9ni,M,6,35,Limite,16,oui,2,1607\nM0549,2026,Centre,Eb\u00e9ni,M,11,23,Limite,15,oui,1,1325\nM0550,2026,Centre,Eb\u00e9ni,M,7,56,Acceptable,2,non,0,1175\nM0551,2026,Centre,Eb\u00e9ni,M,9,12,Pauvre,13,non,1,1326\nM0552,2026,Centre,Eb\u00e9ni,M,10,61,Acceptable,9,oui,3,1263\nM0553,2026,Centre,Eb\u00e9ni,M,8,33,Limite,15,non,1,1114\nM0554,2026,Centre,Eb\u00e9ni,M,8,51,Acceptable,7,oui,2,1929\nM0555,2026,Centre,Eb\u00e9ni,F,6,59,Acceptable,4,oui,3,1279\nM0556,2026,Centre,Eb\u00e9ni,M,5,16,Pauvre,18,non,0,1223\nM0557,2026,Centre,Eb\u00e9ni,M,11,22,Limite,13,non,1,1524\nM0558,2026,Centre,Eb\u00e9ni,M,9,52,Acceptable,6,oui,1,1365\nM0559,2026,Centre,Eb\u00e9ni,F,8,52,Acceptable,2,oui,2,1324\nM0560,2026,Centre,Eb\u00e9ni,F,6,13,Pauvre,18,oui,3,1513\nM0561,2026,Est,Lessa,M,4,12,Pauvre,14,oui,3,1209\nM0562,2026,Est,Lessa,M,8,24,Limite,11,oui,3,1312\nM0563,2026,Est,Lessa,M,7,40,Acceptable,8,non,1,1072\nM0564,2026,Est,Lessa,M,11,20,Pauvre,21,oui,3,1372\nM0565,2026,Est,Lessa,M,4,37,Acceptable,8,oui,3,1499\nM0566,2026,Est,Lessa,F,9,66,Acceptable,11,oui,2,1466\nM0567,2026,Est,Lessa,M,7,45,Acceptable,12,non,2,1098\nM0568,2026,Est,Lessa,M,8,46,Acceptable,7,oui,3,1549\nM0569,2026,Est,Lessa,M,10,12,Pauvre,15,oui,2,1690\nM0570,2026,Est,Lessa,M,8,30,Limite,10,non,0,979\nM0571,2026,Est,Lessa,M,5,55,Acceptable,4,oui,3,1501\nM0572,2026,Est,Lessa,F,3,67,Acceptable,6,oui,3,1435\nM0573,2026,Est,Lessa,M,9,34,Limite,14,non,1,978\nM0574,2026,Est,Lessa,F,9,35,Limite,13,non,0,1247\nM0575,2026,Est,Lessa,M,7,31,Limite,13,oui,1,1390\nM0576,2026,Est,Lessa,M,10,54,Acceptable,11,non,1,1301\nM0577,2026,Est,Lessa,F,7,37,Acceptable,11,non,2,1675\nM0578,2026,Est,Lessa,F,6,11,Pauvre,18,non,1,1191\nM0579,2026,Est,Lessa,F,5,13,Pauvre,12,oui,2,1310\nM0580,2026,Est,Lessa,F,7,66,Acceptable,11,non,1,1522\nM0581,2026,Est,Lessa,M,6,51,Acceptable,0,non,2,1208\nM0582,2026,Est,Lessa,M,7,25,Limite,21,non,0,1196\nM0583,2026,Est,Lessa,M,6,33,Limite,14,oui,2,1473\nM0584,2026,Est,Lessa,F,3,23,Limite,15,oui,2,1669\nM0585,2026,Est,Lessa,F,5,51,Acceptable,7,oui,2,1521\nM0586,2026,Est,Lessa,F,3,41,Acceptable,3,oui,2,1327\nM0587,2026,Est,Lessa,F,8,34,Limite,14,non,1,1080\nM0588,2026,Est,Lessa,M,3,60,Acceptable,10,oui,2,1553\nM0589,2026,Est,Ndjolo,M,11,25,Limite,8,oui,2,1388\nM0590,2026,Est,Ndjolo,F,11,52,Acceptable,9,oui,1,1403\nM0591,2026,Est,Ndjolo,F,11,59,Acceptable,6,oui,1,1406\nM0592,2026,Est,Ndjolo,M,8,34,Limite,7,oui,1,1375\nM0593,2026,Est,Ndjolo,M,4,40,Acceptable,13,oui,3,1522\nM0594,2026,Est,Ndjolo,M,7,35,Limite,12,oui,1,1589\nM0595,2026,Est,Ndjolo,F,4,22,Limite,13,oui,2,1101\nM0596,2026,Est,Ndjolo,M,3,62,Acceptable,6,non,1,886\nM0597,2026,Est,Ndjolo,M,4,40,Acceptable,7,oui,2,1524\nM0598,2026,Est,Ndjolo,M,5,69,Acceptable,10,oui,1,1259\nM0599,2026,Est,Ndjolo,M,4,34,Limite,9,oui,1,1197\nM0600,2026,Est,Ndjolo,F,10,57,Acceptable,7,oui,1,1268\nM0601,2026,Est,Ndjolo,M,8,27,Limite,13,non,0,925\nM0602,2026,Est,Ndjolo,M,9,52,Acceptable,2,oui,1,1606\nM0603,2026,Est,Ndjolo,F,6,37,Acceptable,0,oui,2,1429\nM0604,2026,Est,Ndjolo,F,11,19,Pauvre,19,oui,3,1139\nM0605,2026,Est,Ndjolo,M,6,38,Acceptable,4,non,1,1138\nM0606,2026,Est,Ndjolo,F,4,61,Acceptable,12,non,0,1097\nM0607,2026,Est,Ndjolo,M,4,42,Acceptable,4,non,0,1122\nM0608,2026,Est,Ndjolo,M,6,63,Acceptable,2,non,0,1331\nM0609,2026,Est,Ndjolo,M,11,18,Pauvre,18,non,0,1132\nM0610,2026,Est,Ndjolo,M,9,24,Limite,12,oui,3,1593\nM0611,2026,Est,Ndjolo,M,4,23,Limite,11,non,1,1099\nM0612,2026,Est,Ndjolo,M,5,26,Limite,12,non,1,1282\nM0613,2026,Est,Ndjolo,M,6,61,Acceptable,5,oui,2,1259\nM0614,2026,Est,Ndjolo,F,8,41,Acceptable,3,oui,3,1623\nM0615,2026,Est,Ndjolo,F,10,22,Limite,11,oui,2,1282\nM0616,2026,Est,Ndjolo,M,4,11,Pauvre,22,oui,2,1644\nM0617,2026,Est,Mb\u00e9ti,F,7,21,Pauvre,18,non,0,970\nM0618,2026,Est,Mb\u00e9ti,M,7,70,Acceptable,11,oui,2,1698\nM0619,2026,Est,Mb\u00e9ti,M,3,19,Pauvre,17,non,0,920\nM0620,2026,Est,Mb\u00e9ti,F,3,53,Acceptable,4,oui,3,1588\nM0621,2026,Est,Mb\u00e9ti,F,9,32,Limite,10,non,1,1076\nM0622,2026,Est,Mb\u00e9ti,F,11,9,Pauvre,23,oui,3,1384\nM0623,2026,Est,Mb\u00e9ti,F,8,16,Pauvre,18,oui,2,1482\nM0624,2026,Est,Mb\u00e9ti,M,11,58,Acceptable,10,non,0,1270\nM0625,2026,Est,Mb\u00e9ti,F,7,60,Acceptable,10,oui,1,1679\nM0626,2026,Est,Mb\u00e9ti,F,6,44,Acceptable,7,oui,3,1595\nM0627,2026,Est,Mb\u00e9ti,M,5,55,Acceptable,8,oui,2,1360\nM0628,2026,Est,Mb\u00e9ti,M,11,44,Acceptable,5,non,0,1412\nM0629,2026,Est,Mb\u00e9ti,M,11,20,Pauvre,21,oui,4,1662\nM0630,2026,Est,Mb\u00e9ti,M,9,45,Acceptable,5,non,0,847\nM0631,2026,Est,Mb\u00e9ti,M,4,35,Limite,16,oui,1,1407\nM0632,2026,Est,Mb\u00e9ti,F,6,17,Pauvre,22,oui,2,1710\nM0633,2026,Est,Mb\u00e9ti,M,8,41,Acceptable,5,oui,1,1209\nM0634,2026,Est,Mb\u00e9ti,F,3,24,Limite,11,oui,2,1521\nM0635,2026,Est,Mb\u00e9ti,M,10,48,Acceptable,6,non,0,1620\nM0636,2026,Est,Mb\u00e9ti,M,9,14,Pauvre,13,non,0,1180\nM0637,2026,Est,Mb\u00e9ti,M,11,17,Pauvre,14,oui,1,1679\nM0638,2026,Est,Mb\u00e9ti,F,3,11,Pauvre,13,oui,1,1433\nM0639,2026,Est,Mb\u00e9ti,M,7,22,Limite,12,oui,3,1734\nM0640,2026,Est,Mb\u00e9ti,M,10,22,Limite,8,oui,1,1092\nM0641,2026,Est,Mb\u00e9ti,M,9,23,Limite,13,oui,3,1680\nM0642,2026,Est,Mb\u00e9ti,M,8,48,Acceptable,4,oui,2,1425\nM0643,2026,Est,Mb\u00e9ti,M,4,19,Pauvre,17,non,0,1081\nM0644,2026,Est,Mb\u00e9ti,M,11,16,Pauvre,13,oui,2,1409\nM0645,2026,Est,K\u00e9ra,M,3,32,Limite,12,non,0,1340\nM0646,2026,Est,K\u00e9ra,M,5,29,Limite,15,oui,2,1588\nM0647,2026,Est,K\u00e9ra,M,10,22,Limite,5,oui,3,1483\nM0648,2026,Est,K\u00e9ra,F,3,28,Limite,11,oui,1,1541\nM0649,2026,Est,K\u00e9ra,F,8,30,Limite,12,oui,2,1502\nM0650,2026,Est,K\u00e9ra,F,4,35,Limite,12,non,0,1052\nM0651,2026,Est,K\u00e9ra,F,5,54,Acceptable,2,oui,1,1192\nM0652,2026,Est,K\u00e9ra,M,8,38,Acceptable,3,non,1,1258\nM0653,2026,Est,K\u00e9ra,M,7,21,Pauvre,15,non,0,1334\nM0654,2026,Est,K\u00e9ra,F,11,49,Acceptable,9,oui,2,1422\nM0655,2026,Est,K\u00e9ra,M,11,34,Limite,13,oui,2,1356\nM0656,2026,Est,K\u00e9ra,M,10,17,Pauvre,15,non,0,1066\nM0657,2026,Est,K\u00e9ra,M,4,33,Limite,11,oui,3,1650\nM0658,2026,Est,K\u00e9ra,M,11,28,Limite,13,oui,1,1537\nM0659,2026,Est,K\u00e9ra,M,8,33,Limite,10,oui,4,1450\nM0660,2026,Est,K\u00e9ra,M,3,61,Acceptable,9,oui,2,1232\nM0661,2026,Est,K\u00e9ra,M,5,18,Pauvre,14,oui,2,1573\nM0662,2026,Est,K\u00e9ra,M,3,27,Limite,11,non,0,1227\nM0663,2026,Est,K\u00e9ra,M,8,27,Limite,10,oui,2,1335\nM0664,2026,Est,K\u00e9ra,F,5,13,Pauvre,16,oui,3,1476\nM0665,2026,Est,K\u00e9ra,M,7,35,Limite,12,oui,1,1631\nM0666,2026,Est,K\u00e9ra,M,11,64,Acceptable,2,oui,2,1344\nM0667,2026,Est,K\u00e9ra,F,11,20,Pauvre,17,oui,2,1156\nM0668,2026,Est,K\u00e9ra,F,5,35,Limite,11,oui,1,1408\nM0669,2026,Est,K\u00e9ra,M,11,16,Pauvre,16,oui,2,1446\nM0670,2026,Est,K\u00e9ra,F,4,41,Acceptable,3,oui,1,1781\nM0671,2026,Est,K\u00e9ra,M,11,55,Acceptable,5,non,0,1195\nM0672,2026,Est,K\u00e9ra,F,11,45,Acceptable,8,oui,2,1552\n";
+window.SE_ACTIVITES = "activite,region,prevu,realise\nChamps-\u00e9coles paysans,Nord,18,9\nChamps-\u00e9coles paysans,Centre,18,12\nChamps-\u00e9coles paysans,Est,15,9\nKits de semences,Nord,480,428\nKits de semences,Centre,446,261\nKits de semences,Est,318,198\nFormations agro\u00e9cologie,Nord,17,13\nFormations agro\u00e9cologie,Centre,12,6\nFormations agro\u00e9cologie,Est,19,18\nPoints d'eau,Nord,3,2\nPoints d'eau,Centre,3,1\nPoints d'eau,Est,6,3\n";
+window.SE_COMMUNES = {"Darka": [0, 0, "Nord"], "Mbalé": [1, 0, "Nord"], "Tikor": [2, 0, "Nord"], "Wandou": [0.5, 1, "Nord"], "Bilom": [1.5, 1, "Centre"], "Ngora": [2.5, 1, "Centre"], "Sanda": [1, 2, "Centre"], "Ebéni": [2, 2, "Centre"], "Lessa": [3, 2, "Est"], "Ndjolo": [3.5, 1, "Est"], "Mbéti": [4, 2, "Est"], "Kéra": [3.5, 3, "Est"]};
+</script>
+<style>
+  .se { display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
+  .se-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+  .se-badge { display: inline-block; margin: 0 0 var(--cds-gap-sm); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); border: 1px dashed var(--color-border-line); border-radius: 999px; padding: 2px var(--cds-pad-sm); }
+  .se-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: calc(var(--cds-font-size-title) * 1.3); line-height: 1.15; margin: 0; }
+  .se-sub { margin: var(--cds-gap-xs) 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .se-lede { margin: 0; font-size: var(--cds-font-size-heading); line-height: 1.45; max-width: 52em; }
+  .se-filters { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; margin-top: var(--cds-gap-md); }
+  .se-filters label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .se-quality { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .se-quality b { color: var(--color-fg); font-variant-numeric: tabular-nums; }
+  .se-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); margin-right: 6px; vertical-align: middle; }
+  .se-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--cds-gap-md); }
+  .se-tile-code { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; }
+  .se-tile-label { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 2px 0 var(--cds-gap-sm); min-height: 2.6em; }
+  .se-tile-value { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-title); margin: 0; font-variant-numeric: tabular-nums; }
+  .se-tile-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-xs) 0 0; }
+  .se-tile-sub b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+  .se-prog { position: relative; height: 8px; border-radius: 4px; background: var(--cds-chart-grid); margin-top: var(--cds-gap-sm); }
+  .se-prog > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+  .se-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--cds-gap-md); }
+  @media (max-width: 520px) { .se-grid { grid-template-columns: 1fr; } }
+  .se-h { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .se-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-xs) 0 var(--cds-gap-md); }
+  .se-chart { position: relative; min-height: 180px; }
+  .se-chart text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); }
+  .se-chart .lab { fill: var(--color-fg); }
+  .se-chart .on { fill: #fff; font-weight: 600; }
+  .se-tip { position: absolute; z-index: 2; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; opacity: 0; }
+  .se-legend { list-style: none; margin: 0 0 var(--cds-gap-sm); padding: 0; display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .se-legend li { display: flex; align-items: center; gap: 6px; }
+  .se-sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .se-tablewrap { overflow-x: auto; }
+  .se-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); }
+  .se-table th { text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .se-table td { padding: var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); vertical-align: middle; }
+  .se-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .se-pill { display: inline-block; border-radius: 999px; padding: 1px var(--cds-pad-sm); font-size: var(--cds-font-size-caption); border: 1px solid currentColor; white-space: nowrap; }
+  .se-pill.ok { color: var(--color-ok); } .se-pill.warn { color: var(--color-warn); } .se-pill.bad { color: var(--color-bad); }
+  .se-foot { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; }
+</style>
+
+<div class="se">
+  <header>
+    <p class="se-badge">Démonstration · données fictives</p>
+    <h1 class="se-title">Projet d'appui à la résilience alimentaire</h1>
+    <p class="se-sub">Tableau de bord de suivi-évaluation · enquêtes ménages KoboToolbox, référence 2025 et suivi 2026 · 3 régions, 12 communes</p>
+    <p class="se-lede" id="se-lede">—</p>
+    <div class="se-filters">
+      <label for="f-region">Région</label>
+      <select class="dash-select" id="f-region"><option value="">Toutes</option><option>Nord</option><option>Centre</option><option>Est</option></select>
+      <label for="f-sexe">Chef de ménage</label>
+      <select class="dash-select" id="f-sexe"><option value="">Femmes et hommes</option><option value="F">Femmes</option><option value="M">Hommes</option></select>
+    </div>
+  </header>
+
+  <div class="se-quality" id="se-quality"></div>
+
+  <div class="se-tiles" id="se-tiles"></div>
+
+  <div class="se-grid">
+    <section class="se-card">
+      <h2 class="se-h">Consommation alimentaire des ménages</h2>
+      <p class="se-note">Répartition selon le score de consommation alimentaire (SCA), par année et sexe du chef de ménage.</p>
+      <ul class="se-legend">
+        <li><span class="se-sw" style="background:var(--color-bad)"></span>Pauvre</li>
+        <li><span class="se-sw" style="background:var(--color-warn)"></span>Limite</li>
+        <li><span class="se-sw" style="background:var(--color-ok)"></span>Acceptable</li>
+      </ul>
+      <div class="se-chart" id="c-sca"></div>
+    </section>
+
+    <section class="se-card">
+      <h2 class="se-h">Carte des communes</h2>
+      <p class="se-note">Part des ménages avec une consommation alimentaire acceptable en 2026. Carte schématique.</p>
+      <div class="se-chart" id="c-map"></div>
+    </section>
+
+    <section class="se-card">
+      <h2 class="se-h">Bénéficiaires et non-bénéficiaires</h2>
+      <p class="se-note">Comparaison 2026 entre les ménages appuyés par le projet et les autres.</p>
+      <ul class="se-legend">
+        <li><span class="se-sw" id="sw-b"></span>Bénéficiaires</li>
+        <li><span class="se-sw" style="background:var(--cds-chart-muted)"></span>Non-bénéficiaires</li>
+      </ul>
+      <div class="se-chart" id="c-benef"></div>
+    </section>
+
+    <section class="se-card">
+      <h2 class="se-h">Réalisation des activités</h2>
+      <p class="se-note">Réalisé par rapport au prévu dans le plan de travail annuel.</p>
+      <div class="se-chart" id="c-act"></div>
+    </section>
+  </div>
+
+  <section class="se-card">
+    <h2 class="se-h">Cadre de résultats</h2>
+    <p class="se-note">Valeurs calculées pour la sélection en cours. Taux d'atteinte = progrès réalisé depuis la référence, rapporté au progrès visé.</p>
+    <div class="se-tablewrap">
+      <table class="se-table">
+        <thead><tr><th>Code</th><th>Indicateur</th><th class="se-num">Référence 2025</th><th class="se-num">Valeur 2026</th><th class="se-num">Cible 2027</th><th class="se-num">Atteinte</th><th>Statut</th></tr></thead>
+        <tbody id="t-cr"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="se-foot">Exemple produit pour illustrer un tableau de bord de suivi-évaluation. Le projet, les communes, les ménages et toutes les valeurs sont inventés.</p>
+</div>
+
+<script>
+(() => {
+  const M = d3.csvParse(window.SE_MENAGES, d3.autoType);
+  const A = d3.csvParse(window.SE_ACTIVITES, d3.autoType);
+  const C = window.SE_COMMUNES;
+  const fr = d3.formatLocale({ decimal: ',', thousands: ' ', grouping: [3], currency: ['', ' $'] });
+  const num = fr.format(',.0f'), dec1 = fr.format(',.1f');
+  const pct = (v) => (v == null || isNaN(v)) ? '—' : Math.round(v * 100) + ' %';
+  const ACC = 'var(--chart-1)';
+  document.getElementById('sw-b').style.background = ACC;
+  const state = { region: '', sexe: '' };
+  const filt = (rows) => rows.filter((r) => (!state.region || r.region === state.region) && (!state.sexe || r.sexe_chef === state.sexe));
+  const share = (rows, f) => rows.length ? rows.filter(f).length / rows.length : NaN;
+
+  const IND = [
+    { code: 'IR1', label: 'Ménages avec une consommation alimentaire acceptable', unit: '%', cible: 0.55, up: true, f: (r) => share(r, (d) => d.cat_sca === 'Acceptable') },
+    { code: 'IR2', label: 'Indice réduit des stratégies d’adaptation (rCSI) moyen', unit: 'idx', cible: 7, up: false, f: (r) => d3.mean(r, (d) => d.rcsi) },
+    { code: 'IR3', label: 'Ménages adoptant au moins 2 pratiques agroécologiques', unit: '%', cible: 0.5, up: true, f: (r) => share(r, (d) => d.pratiques >= 2) },
+    { code: 'IR4', label: 'Rendement moyen du maïs (kg/ha)', unit: 'kg', cible: 1450, up: true, f: (r) => d3.mean(r, (d) => d.rendement_mais) }
+  ];
+  const fmt = (ind, v) => ind.unit === '%' ? pct(v) : ind.unit === 'idx' ? dec1(v) : num(v);
+  const atteinte = (ind, b, a) => { const span = ind.cible - b; return span ? (a - b) / span : NaN; };
+
+  const tipOf = (el) => d3.select(el).append('div').attr('class', 'se-tip');
+  const show = (tip, el, ev, text) => { const [mx, my] = d3.pointer(ev, el); tip.text(text).style('opacity', 1); const w = tip.node().offsetWidth; tip.style('left', Math.max(0, Math.min(mx + 12, el.clientWidth - w)) + 'px').style('top', Math.max(0, my - 34) + 'px'); };
+
+  function render() {
+    const R = filt(M), R25 = R.filter((d) => d.annee === 2025), R26 = R.filter((d) => d.annee === 2026);
+    const vals = IND.map((ind) => { const b = ind.f(R25), a = ind.f(R26); return { ind, b, a, t: atteinte(ind, b, a) }; });
+
+    // Phrase-résumé
+    const sca = vals[0], sel = [state.region ? 'la région ' + state.region : 'les 3 régions', state.sexe === 'F' ? 'les ménages dirigés par une femme' : state.sexe === 'M' ? 'les ménages dirigés par un homme' : ''].filter(Boolean).join(', ');
+    document.getElementById('se-lede').textContent = `Pour ${sel}, la part des ménages avec une consommation alimentaire acceptable passe de ${pct(sca.b)} à ${pct(sca.a)} entre 2025 et 2026, pour une cible de ${pct(sca.ind.cible)} en 2027.`;
+
+    // Qualité des données
+    document.getElementById('se-quality').innerHTML = '';
+    const q = document.getElementById('se-quality');
+    [[`<span class="se-dot"></span>Dernière synchronisation KoboToolbox : <b>15 nov. 2026</b>`], [`Ménages enquêtés : <b>${num(R25.length)}</b> en 2025 · <b>${num(R26.length)}</b> en 2026`], [`Formulaires complets : <b>100 %</b>`]].forEach(([h]) => { const s = document.createElement('span'); s.innerHTML = h; q.append(s); });
+
+    // Tuiles
+    const tiles = document.getElementById('se-tiles'); tiles.replaceChildren();
+    vals.forEach(({ ind, b, a, t }) => {
+      const d = document.createElement('div'); d.className = 'se-card';
+      const col = t >= 0.66 ? 'var(--color-ok)' : t >= 0.33 ? 'var(--color-warn)' : 'var(--color-bad)';
+      d.innerHTML = `<p class="se-tile-code">${ind.code}</p><p class="se-tile-label"></p><p class="se-tile-value"></p><div class="se-prog"><span></span></div><p class="se-tile-sub"></p>`;
+      d.querySelector('.se-tile-label').textContent = ind.label;
+      d.querySelector('.se-tile-value').textContent = fmt(ind, a);
+      const bar = d.querySelector('.se-prog > span'); bar.style.width = Math.max(2, Math.min(100, (isNaN(t) ? 0 : t) * 100)) + '%'; bar.style.background = col;
+      d.querySelector('.se-tile-sub').innerHTML = `Référence <b></b> · cible <b></b> · atteinte <b></b>`;
+      const bs = d.querySelectorAll('.se-tile-sub b'); bs[0].textContent = fmt(ind, b); bs[1].textContent = fmt(ind, ind.cible); bs[2].textContent = isNaN(t) ? '—' : Math.round(t * 100) + ' %';
+      tiles.append(d);
+    });
+
+    drawSCA(R); drawMap(); drawBenef(R26); drawAct(); drawTable(vals);
+  }
+
+  function drawSCA(R) {
+    const el = document.getElementById('c-sca'); el.replaceChildren();
+    const groups = [];
+    [2025, 2026].forEach((an) => ['F', 'M'].forEach((s) => { if (!state.sexe || state.sexe === s) { const g = R.filter((d) => d.annee === an && d.sexe_chef === s); groups.push({ label: `${an} · ${s === 'F' ? 'Femmes' : 'Hommes'}`, n: g.length, p: share(g, (d) => d.cat_sca === 'Pauvre'), l: share(g, (d) => d.cat_sca === 'Limite'), a: share(g, (d) => d.cat_sca === 'Acceptable') }); } }));
+    const W = Math.max(el.clientWidth, 280), lw = 112, rowH = 42, H = groups.length * rowH + 6;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', 'Répartition des ménages par catégorie de consommation alimentaire');
+    const x = d3.scaleLinear().domain([0, 1]).range([lw, W]);
+    const tip = tipOf(el);
+    groups.forEach((g, i) => {
+      const y = i * rowH + 4;
+      svg.append('text').attr('class', 'lab').attr('x', 0).attr('y', y + 20).text(g.label);
+      let x0 = 0;
+      [['Pauvre', g.p, 'var(--color-bad)'], ['Limite', g.l, 'var(--color-warn)'], ['Acceptable', g.a, 'var(--color-ok)']].forEach(([k, v, c]) => {
+        svg.append('rect').attr('x', x(x0)).attr('y', y).attr('width', Math.max(0, x(x0 + v) - x(x0))).attr('height', 28).style('fill', c)
+          .on('mousemove', (ev) => show(tip, el, ev, `${g.label} · ${k} : ${pct(v)} (n = ${g.n})`)).on('mouseleave', () => tip.style('opacity', 0));
+        if (v >= 0.09) svg.append('text').attr('class', 'on').attr('x', x(x0 + v / 2)).attr('y', y + 18.5).attr('text-anchor', 'middle').text(pct(v));
+        x0 += v;
+      });
+    });
+  }
+
+  function drawMap() {
+    const el = document.getElementById('c-map'); el.replaceChildren();
+    const data = Object.entries(C).map(([c, [cx, cy, reg]]) => { const g = M.filter((d) => d.commune === c && d.annee === 2026 && (!state.sexe || d.sexe_chef === state.sexe)); return { c, cx, cy, reg, v: share(g, (d) => d.cat_sca === 'Acceptable'), n: g.length }; });
+    const W = Math.max(el.clientWidth, 280);
+    const r = Math.min(50, (W - 60) / 9), hw = Math.sqrt(3) * r;
+    const top = 26, H = top + r + 3 * r * 1.5 + r + 30;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', 'Carte schématique des communes');
+    const ox = (W - 4 * hw) / 2;
+    const color = d3.scaleSequential([0.2, 0.8], d3.interpolateRgb('#e8efe6', '#2f8a4e')).clamp(true);
+    const hex = (x, y) => d3.range(6).map((k) => { const a = Math.PI / 180 * (60 * k - 30); return [x + r * Math.cos(a), y + r * Math.sin(a)]; });
+    const tip = tipOf(el);
+    data.forEach((d) => {
+      const x = ox + d.cx * hw, y = top + r + d.cy * r * 1.5;
+      const dim = state.region && d.reg !== state.region;
+      const g = svg.append('g').style('opacity', dim ? 0.25 : 1);
+      g.append('path').attr('d', d3.line()(hex(x, y)) + 'Z').style('fill', color(d.v)).style('stroke', 'var(--color-panel)').attr('stroke-width', 3)
+        .on('mousemove', (ev) => show(tip, el, ev, `${d.c} (${d.reg}) : ${pct(d.v)} acceptable · n = ${d.n}`)).on('mouseleave', () => tip.style('opacity', 0));
+      const light = d.v > 0.5;
+      g.append('text').attr('x', x).attr('y', y - 2).attr('text-anchor', 'middle').style('fill', light ? '#fff' : '#1f1e1c').style('font-size', '11.5px').style('pointer-events', 'none').text(d.c);
+      g.append('text').attr('x', x).attr('y', y + 14).attr('text-anchor', 'middle').style('fill', light ? '#fff' : '#1f1e1c').style('font-weight', 600).style('font-size', '12.5px').style('pointer-events', 'none').text(pct(d.v));
+    });
+    const ly = (cy) => top + r + cy * r * 1.5;
+    [['NORD', ox + 1 * hw, top - 8, 'middle'], ['CENTRE', ox + 0.2 * hw, ly(2) + r + 14, 'middle'], ['EST', ox + 4.35 * hw, ly(3) + 4, 'start']].forEach(([n, x, y, an]) => {
+      svg.append('text').attr('x', x).attr('y', y).attr('text-anchor', an).style('font-weight', 600).style('letter-spacing', '0.06em').text(n);
+    });
+  }
+
+  function drawBenef(R26) {
+    const el = document.getElementById('c-benef'); el.replaceChildren();
+    const b = R26.filter((d) => d.beneficiaire === 'oui'), nb = R26.filter((d) => d.beneficiaire === 'non');
+    const metrics = [
+      { k: 'Consommation acceptable', vb: share(b, (d) => d.cat_sca === 'Acceptable'), vn: share(nb, (d) => d.cat_sca === 'Acceptable'), max: 1, f: pct },
+      { k: '2 pratiques agroécologiques ou plus', vb: share(b, (d) => d.pratiques >= 2), vn: share(nb, (d) => d.pratiques >= 2), max: 1, f: pct },
+      { k: 'Rendement du maïs (kg/ha)', vb: d3.mean(b, (d) => d.rendement_mais), vn: d3.mean(nb, (d) => d.rendement_mais), max: 2000, f: num }
+    ];
+    const W = Math.max(el.clientWidth, 280), rowH = 66, H = metrics.length * rowH;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', 'Comparaison bénéficiaires et non-bénéficiaires');
+    const tip = tipOf(el);
+    metrics.forEach((m, i) => {
+      const y = i * rowH, x = d3.scaleLinear().domain([0, m.max]).range([0, W - 70]);
+      svg.append('text').attr('class', 'lab').attr('x', 0).attr('y', y + 13).text(m.k);
+      [[m.vb, ACC, 'Bénéficiaires', 20], [m.vn, 'var(--cds-chart-muted)', 'Non-bénéficiaires', 38]].forEach(([v, c, lab, dy]) => {
+        svg.append('rect').attr('x', 0).attr('y', y + dy).attr('width', Math.max(2, x(v || 0))).attr('height', 14).attr('rx', 3).style('fill', c)
+          .on('mousemove', (ev) => show(tip, el, ev, `${lab} : ${m.f(v)}`)).on('mouseleave', () => tip.style('opacity', 0));
+        svg.append('text').attr('x', x(v || 0) + 6).attr('y', y + dy + 11.5).text(m.f(v));
+      });
+    });
+  }
+
+  function drawAct() {
+    const el = document.getElementById('c-act'); el.replaceChildren();
+    const rows = d3.rollups(A.filter((d) => !state.region || d.region === state.region), (v) => ({ prevu: d3.sum(v, (d) => d.prevu), realise: d3.sum(v, (d) => d.realise) }), (d) => d.activite).map(([k, v]) => ({ k, ...v, t: v.realise / v.prevu }));
+    const W = Math.max(el.clientWidth, 280), rowH = 46, H = rows.length * rowH;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', 'Réalisation des activités');
+    const x = d3.scaleLinear().domain([0, 1]).range([0, W]);
+    const tip = tipOf(el);
+    rows.forEach((d, i) => {
+      const y = i * rowH;
+      svg.append('text').attr('class', 'lab').attr('x', 0).attr('y', y + 14).text(d.k);
+      svg.append('text').attr('x', W).attr('y', y + 14).attr('text-anchor', 'end').text(`${num(d.realise)} / ${num(d.prevu)} · ${pct(d.t)}`);
+      svg.append('rect').attr('x', 0).attr('y', y + 22).attr('width', W).attr('height', 10).attr('rx', 5).style('fill', 'var(--cds-chart-grid)');
+      svg.append('rect').attr('x', 0).attr('y', y + 22).attr('width', Math.max(10, x(d.t))).attr('height', 10).attr('rx', 5).style('fill', d.t >= 0.75 ? 'var(--color-ok)' : d.t >= 0.5 ? 'var(--color-warn)' : 'var(--color-bad)')
+        .on('mousemove', (ev) => show(tip, el, ev, `${d.k} : ${num(d.realise)} réalisés sur ${num(d.prevu)} prévus`)).on('mouseleave', () => tip.style('opacity', 0));
+    });
+  }
+
+  function drawTable(vals) {
+    const tb = document.getElementById('t-cr'); tb.replaceChildren();
+    vals.forEach(({ ind, b, a, t }) => {
+      const tr = document.createElement('tr');
+      const td = (txt, c) => { const e = document.createElement('td'); if (c) e.className = c; e.textContent = txt; tr.append(e); return e; };
+      td(ind.code); td(ind.label); td(fmt(ind, b), 'se-num'); td(fmt(ind, a), 'se-num'); td(fmt(ind, ind.cible), 'se-num'); td(isNaN(t) ? '—' : Math.round(t * 100) + ' %', 'se-num');
+      const s = td(''); const p = document.createElement('span');
+      p.className = 'se-pill ' + (t >= 0.66 ? 'ok' : t >= 0.33 ? 'warn' : 'bad'); p.textContent = t >= 0.66 ? 'En bonne voie' : t >= 0.33 ? 'À surveiller' : 'En retard'; s.append(p);
+      tb.append(tr);
+    });
+  }
+
+  document.getElementById('f-region').addEventListener('change', (e) => { state.region = e.target.value; render(); });
+  document.getElementById('f-sexe').addEventListener('change', (e) => { state.sexe = e.target.value; render(); });
+  let w0 = window.innerWidth, tm; window.addEventListener('resize', () => { if (window.innerWidth === w0) return; w0 = window.innerWidth; clearTimeout(tm); tm = setTimeout(render, 150); });
+  render();
+})();
+</script>
+
+<p class="se-foot" style="margin-top:14px">Conçu par Seguy Enock Fotazou, agr., M. Sc. · agronome et analyste en suivi-évaluation et intelligence d'affaires · <a href="mailto:enockseguy@gmail.com">enockseguy@gmail.com</a></p>
+</div>
+</body>
+</html>
